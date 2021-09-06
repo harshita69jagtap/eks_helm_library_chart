@@ -1,5 +1,5 @@
-shippable_devops_res:
-  name: shippable_devops_coderepo
-  branch: eks
-  path: punchh/shippable-devops
+eks_helm_library_chart:
+  name: eks_helm_library_chart
+  branch: main
+  path: harshita69jagtap/eks_helm_library_chart
   integ: intg_github_pipelines
