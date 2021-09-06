@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: datalake-airflow-flower
+  labels:
+    app: datalake-airflow-flower
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: datalake-airflow-flower
+  template:
+    metadata:
+      labels:
+        app: datalake-airflow-flower
+    spec:
+      containers:
+      - name: {{ .Values.datalake.flower.name }}
+        image: {{ .Values.images.airflow }}:{{ index .Values.tags "datalake-airflow" }}
+        args: [ {{ quote .Values.datalake.flower.args }} ]
+        imagePullPolicy: {{ .Values.global.common.pullPolicy }}
+        ports:
+        - name: {{ .Values.datalake.flower.name }}
+          containerPort: {{ .Values.datalake.flower.port }}
+          protocol: TCP
+        resources:
+          {{- toYaml .Values.datalake.flower.resources | nindent 10 }}
+        env:
+{{- range $key, $value := .Values.global.common.env }}
+        - name: {{ $key }}
+          value: {{ $value | quote }}
+{{- end }}
+{{- range $key, $value := .Values.datalake.flower.env }}
+        - name: {{ $key }}
+          value: {{ $value | quote }}
+{{- end }}
+        - name: AIRFLOW__CORE__SQL_ALCHEMY_CONN
+          value: {{ .Values.global.common.env.db_con1 }}://{{ .Values.global.common.env.DB_USER }}:{{ .Values.global.common.env.DB_PASSWORD }}@{{ .Values.global.common.env.DB_HOST }}:5432/{{ .Values.global.common.env.DB_NAME_AIRFLOW }}
+        - name: AIRFLOW__CELERY__RESULT_BACKEND
+          value: {{ .Values.global.common.env.db_con2 }}://{{ .Values.global.common.env.DB_USER }}:{{ .Values.global.common.env.DB_PASSWORD }}@{{ .Values.global.common.env.DB_HOST }}:5432/{{ .Values.global.common.env.DB_NAME_AIRFLOW }}
+        - name: REDIS_HOST
+          value: datalake-airflow-redis-svc.{{ .Release.Namespace }}

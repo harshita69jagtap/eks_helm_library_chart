@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/group.name: dennys-internal
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:115613861243:certificate/cb07c159-2006-405e-9850-fbd619df118b
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/scheme: internal
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/tags: Environment=Production,Team=DevOps
+  name: cadence-web
+  namespace: dennys
+spec:
+  rules:
+  - host: cadence-web.punchhdennys.com
+    http:
+      paths:
+      - backend:
+          serviceName: cadence-web
+          servicePort: 80

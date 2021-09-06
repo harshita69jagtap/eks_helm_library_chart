@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins-master
+  labels:
+    app: jenkins
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: http
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:us-east-1:060724984176:certificate/b15bf233-5c2e-4c93-a96f-246f842cd740
+    service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443"
+    service.beta.kubernetes.io/aws-load-balancer-internal: "true"
+spec:
+  ports:
+  - name: http
+    port: 443
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: jenkins
+  type: LoadBalancer
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins-agent
+  labels:
+    app: jenkins
+spec:
+  ports:
+  - name: slave
+    port: 50000
+    protocol: TCP
+    targetPort: 50000
+  selector:
+    app: jenkins
+  type: ClusterIP

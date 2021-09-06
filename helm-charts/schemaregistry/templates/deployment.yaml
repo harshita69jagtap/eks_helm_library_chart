@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: schemaregistry
+  labels:
+    app: schemaregistry
+spec:
+  replicas: {{ .Values.schemaregistry.replicaCount }}
+  strategy:
+    rollingUpdate:
+      maxSurge: {{ .Values.schemaregistry.maxSurge }}
+      maxUnavailable: {{ .Values.schemaregistry.maxUnavailable }}
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: schemaregistry
+  template:
+    metadata:
+      labels:
+        app: schemaregistry
+    spec:
+      containers:
+      - name: schemaregistry
+        image: confluentinc/cp-schema-registry:6.1.1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8081
+          name: http
+          protocol: TCP
+        env:
+{{- range $key, $value := .Values.schemaregistry.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+{{- end }}
+        resources:
+          {{- toYaml .Values.schemaregistry.resources | nindent 10 }}
+      {{- if .Values.schemaregistry.antiaffinity }}
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - schemaregistry
+            topologyKey: "kubernetes.io/hostname"
+      {{- end }}
+      nodeSelector:
+        node_group_type: {{ .Values.schemaregistry.node_group_type }}

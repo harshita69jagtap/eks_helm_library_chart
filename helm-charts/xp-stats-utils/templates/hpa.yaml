@@ -1,0 +1,18 @@
+{{- if .Values.xpstatsutils.hpa.enabled }}
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpa-xp-stats-utils
+spec:
+  scaleTargetRef:
+    apiVersion: extensions/v1beta1
+    kind: Deployment
+    name: xp-stats-utils
+  minReplicas: 1
+  maxReplicas: {{ .Values.xpstatsutils.hpa.maxReplicas }}
+  metrics:
+  - type: Resource
+    resource:
+      name: {{ .Values.xpstatsutils.hpa.type }}
+      targetAverageUtilization: {{ .Values.global.common.hpa.targetAverageUtilization }}
+{{ end }}

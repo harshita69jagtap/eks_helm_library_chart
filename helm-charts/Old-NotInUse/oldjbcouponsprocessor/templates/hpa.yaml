@@ -1,0 +1,18 @@
+{{- if .Values.jbcouponsprocessor.hpa.enabled }}
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpa-jbcouponsprocessor
+spec:
+  scaleTargetRef:
+    apiVersion: extensions/v1beta1
+    kind: Deployment
+    name: jbcouponsprocessor
+  minReplicas: 1
+  maxReplicas: {{ .Values.jbcouponsprocessor.hpa.maxReplicas }}
+  metrics:
+  - type: Resource
+    resource:
+      name: {{ .Values.jbcouponsprocessor.hpa.type }}
+      targetAverageUtilization: {{ .Values.global.common.hpa.targetAverageUtilization }}
+{{ end }}

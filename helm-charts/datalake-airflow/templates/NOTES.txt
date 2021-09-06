@@ -1,0 +1,102 @@
+= = = = = = = = 
+Important Notes
+= = = = = = = = 
+
+1. Installing a Helm repository in s3
+
+    1. Create a s3 bucket and configure access
+
+    2. Install helm s3 plugin
+
+        helm plugin install https://github.com/hypnoglow/helm-s3.git
+
+    3. Initialize s3 bucket to work as a helm repository
+
+        helm s3 init s3://datalake-helm-charts
+
+
+    4. Add s3 bucket as a helm repo
+
+        helm repo add datalake-airflow s3://datalake-helm-charts
+
+
+    5. Package your charts
+
+        helm package datalake-airflow
+
+
+    6. Push package to s3
+
+        helm s3 push ./datalake-airflow-0.0.3.tgz datalake-airflow
+
+
+    7. Search for charts
+
+        helm search datalake
+
+
+2. Create AWS Secret for web users to run scripts on aws
+
+    Secret file should be created for web server to use it as an env varibale
+
+    Secrets should be encoded with base 64 before adding them to the file as shown below
+
+    echo -n '<AWS_ACCESS_KEY_ID>' | base64
+    echo -n '<AWS_ACCESS_SECRET_KEY>' | base64
+
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: datalake-airflow-web-user-auth
+    data:
+      awsAccessId:
+      awsSecretKey:
+
+    kubectl create -f aws-keys.yaml
+
+
+3. Evaluate chart and deploy it
+
+    helm install --dry-run --debug --name=datalake-airflow datalake-airflow
+
+    helm install --name=datalake-airflow datalake-airflow
+
+
+4. Important Helm commands
+
+    helm list
+
+    helm delete --purge datalake-airflow
+
+    helm install --dry-run --debug --name=datalake-airflow datalake-datalake-airflow
+
+    helm install --name=datalake-airflow datalake-airflow
+
+    helm upgrade datalake-airflow datalake-airflow
+
+    helm history datalake-airflow
+
+    helm rollback datalake-airflow revision#
+
+
+5. Setup Tiller locally
+
+    export TILLER_NAMESPACE=tiller
+    export HELM_HOST=:44134
+
+    tiller -listen=localhost:44134 -storage=secret -logtostderr
+
+
+6. Copy files from local machine to kube pod
+
+    kubectl cp /local/path namespace/podname:path/to/directory
+
+
+    export EFS_SHARE=fs-02ba827b.efs.us-east-2.amazonaws.com
+    export DB_HOST="datalake-airflow.cy7itzr9sdtf.us-east-2.rds.amazonaws.com"
+
+    helm install --dry-run --set db_host=test --debug ./datalake-airflow
+
+    helm install --dry-run  -f values.yaml --val common.env.db_host=test --debug ./datalake-airflow
+
+    helm install --set efs_share=$EFS_SHARE --set db_host=$DB_HOST ./mychart

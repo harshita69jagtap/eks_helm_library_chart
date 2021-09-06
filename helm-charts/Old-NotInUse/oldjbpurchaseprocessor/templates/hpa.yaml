@@ -1,0 +1,18 @@
+{{- if .Values.jbpurchaseprocessor.hpa.enabled }}
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpa-jbpurchaseprocessor
+spec:
+  scaleTargetRef:
+    apiVersion: extensions/v1beta1
+    kind: Deployment
+    name: jbpurchaseprocessor
+  minReplicas: 1
+  maxReplicas: {{ .Values.jbpurchaseprocessor.hpa.maxReplicas }}
+  metrics:
+  - type: Resource
+    resource:
+      name: {{ .Values.jbpurchaseprocessor.hpa.type }}
+      targetAverageUtilization: {{ .Values.global.common.hpa.targetAverageUtilization }}
+{{ end }}

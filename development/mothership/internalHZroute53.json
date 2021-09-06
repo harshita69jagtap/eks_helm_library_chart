@@ -1,0 +1,82 @@
+{
+    "Comment": "mothership route53 record set creation for internal hosted zone",
+    "Changes": [      
+      {
+        "Action": "UPSERT",
+        "ResourceRecordSet": {
+          "Name": "kafka-connect.punchh.internal",
+          "Type": "A",
+          "AliasTarget": {
+            "HostedZoneId": "Z35SXDOTRQ7X7K",
+            "DNSName": "dualstack.internal-k8s-mothershipinterna-6813896f76-1351959076.us-east-1.elb.amazonaws.com.",
+            "EvaluateTargetHealth": false
+          }
+        }
+      },
+  
+      {
+        "Action": "UPSERT",
+        "ResourceRecordSet": {
+          "Name": "aegaeonoutbound.punchh.internal",
+          "Type": "A",
+          "AliasTarget": {
+            "HostedZoneId": "Z35SXDOTRQ7X7K",
+            "DNSName": "dualstack.internal-k8s-mothershipinterna-6813896f76-1351959076.us-east-1.elb.amazonaws.com.",
+            "EvaluateTargetHealth": false
+          }
+        }
+      },
+      
+      {
+        "Action": "UPSERT",
+        "ResourceRecordSet": {
+          "Name": "aegaeonpayments.punchh.internal",
+          "Type": "A",
+          "AliasTarget": {
+            "HostedZoneId": "Z35SXDOTRQ7X7K",
+            "DNSName": "dualstack.internal-k8s-mothershipinterna-6813896f76-1351959076.us-east-1.elb.amazonaws.com.",
+            "EvaluateTargetHealth": false
+          }
+        }
+      },
+  
+      {
+        "Action": "UPSERT",
+        "ResourceRecordSet": {
+          "Name": "aegaeongiftcards.punchh.internal",
+          "Type": "A",
+          "AliasTarget": {
+            "HostedZoneId": "Z35SXDOTRQ7X7K",
+            "DNSName": "dualstack.internal-k8s-mothershipinterna-6813896f76-1351959076.us-east-1.elb.amazonaws.com.",
+            "EvaluateTargetHealth": false
+          }
+        }
+      },
+  
+      {
+        "Action": "UPSERT",
+        "ResourceRecordSet": {
+          "Name": "aegaeonemail.punchh.internal",
+          "Type": "A",
+          "AliasTarget": {
+            "HostedZoneId": "Z35SXDOTRQ7X7K",
+            "DNSName": "dualstack.internal-k8s-mothershipinterna-6813896f76-1351959076.us-east-1.elb.amazonaws.com.",
+            "EvaluateTargetHealth": false
+          }
+        }
+      },
+  
+      {
+        "Action": "UPSERT",
+        "ResourceRecordSet": {
+          "Name": "aegaeonmessaging.punchh.internal",
+          "Type": "A",
+          "AliasTarget": {
+            "HostedZoneId": "Z35SXDOTRQ7X7K",
+            "DNSName": "dualstack.internal-k8s-mothershipinterna-6813896f76-1351959076.us-east-1.elb.amazonaws.com.",
+            "EvaluateTargetHealth": false
+          }
+        }
+      }
+    ]
+  }

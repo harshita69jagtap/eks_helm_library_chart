@@ -1,0 +1,18 @@
+{{- if .Values.jbredemptionsprocessor.hpa.enabled }}
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpa-jbredemptionsprocessor
+spec:
+  scaleTargetRef:
+    apiVersion: extensions/v1beta1
+    kind: Deployment
+    name: jbredemptionsprocessor
+  minReplicas: 1
+  maxReplicas: {{ .Values.jbredemptionsprocessor.hpa.maxReplicas }}
+  metrics:
+  - type: Resource
+    resource:
+      name: {{ .Values.jbredemptionsprocessor.hpa.type }}
+      targetAverageUtilization: {{ .Values.global.common.hpa.targetAverageUtilization }}
+{{ end }}

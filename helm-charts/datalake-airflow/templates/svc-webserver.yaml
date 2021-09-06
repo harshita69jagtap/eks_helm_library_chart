@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: datalake-airflow-web-svc
+  labels:
+    app: datalake-airflow-web-svc
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.global.common.service.port }}
+      targetPort: {{ .Values.datalake.web.port }}
+      protocol: TCP
+      name: web
+  selector:
+    app: datalake-airflow-web

@@ -1,0 +1,43 @@
+{
+  "Comment": "dairyqueen route53 record set creation for external hosted zone",
+  "Changes": [
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "cadence-web-dq.punchh.com",
+        "Type": "A",
+        "AliasTarget": {
+          "HostedZoneId": "Z1H1FL5HABSF5",
+          "DNSName": "dualstack.internal-k8s-dairyqueeninterna-180434953c-1699233858.us-west-2.elb.amazonaws.com.",
+          "EvaluateTargetHealth": false
+        }
+      }
+    },
+
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "csp-dq.punchh.com",
+        "Type": "A",
+        "AliasTarget": {
+          "HostedZoneId": "Z1H1FL5HABSF5",
+          "DNSName": "dualstack.k8s-dairyqueeninterne-9e89819964-1784928649.us-west-2.elb.amazonaws.com.",
+          "EvaluateTargetHealth": false
+        }
+      }
+    },
+    
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "jbdq.punchh.com",
+        "Type": "A",
+        "AliasTarget": {
+          "HostedZoneId": "Z1H1FL5HABSF5",
+          "DNSName": "dualstack.k8s-dairyqueeninterne-9e89819964-1784928649.us-west-2.elb.amazonaws.com.",
+          "EvaluateTargetHealth": false
+        }
+      }
+    }
+  ]
+}

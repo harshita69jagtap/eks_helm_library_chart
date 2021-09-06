@@ -1,0 +1,197 @@
+global:
+  common:
+    imagePullSecrets: regcred
+    pullPolicy: IfNotPresent
+
+    service:
+      type: ClusterIP
+      port: 80
+
+    serviceAccount:
+      create: false
+    env:
+      TENANT: service
+      TENANT_NAME: service
+      VAULT_HOST: https://vault.punchh.com
+      BUILD_NUMBER: "1"
+
+    livenessProbe:
+      initialDelaySeconds: 90
+      periodSeconds: 30
+      successThreshold: 1
+      timeoutSeconds: 5
+    readinessProbe:
+      initialDelaySeconds: 45
+      periodSeconds: 15
+      successThreshold: 1
+      timeoutSeconds: 5
+
+    podSecurityContext: {}
+    securityContext: {}
+
+
+aegaeonoutbound:
+  initcontainer:
+    env:
+      global_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:sandbox/aegaeon-outbound-uOdyOh"
+      tenant_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:sandbox/aegaeon-outbound-uOdyOh"
+      service_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:sandbox/aegaeon-outbound-uOdyOh"
+      db_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:sandbox/db-secrets-zB1aJB"
+
+  name: aegaeonoutbound
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 80%
+  maxUnavailable: 20%
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: /ping
+  containerPort: 3000
+  args: ["source /tmp/secret && ./main"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    INSTANCE: production
+    INSTANCE_TYPE: server
+    PORT: 3000
+    CREDENTIAL_PROVIDER: secret_manager
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 2048m
+      memory: 2048Mi
+    requests:
+      cpu: 1024m
+      memory: 1024Mi
+
+
+aegaeonemail:
+  initcontainer:
+    env:
+      global_secrets_arn:  "arn:aws:secretsmanager:us-east-1:060724984176:secret:sandbox/aegaeon-email-3AjvLf"
+      tenant_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:sandbox/aegaeon-email-3AjvLf"
+      service_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:sandbox/aegaeon-email-3AjvLf"
+      db_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:sandbox/db-secrets-zB1aJB"
+
+  name: aegaeonemail
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 80%
+  maxUnavailable: 20%
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: /ping
+  containerPort: 3000
+  args: ["source /tmp/secret && ./main"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    INSTANCE: production
+    INSTANCE_TYPE: server
+    PORT: 3000
+    CREDENTIAL_PROVIDER: secret_manager
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 2048m
+      memory: 2048Mi
+    requests:
+      cpu: 1024m
+      memory: 1024Mi
+
+aegaeonmessaging:
+  initcontainer:
+    env:
+      global_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:sandbox/aegaeon-messaging-RzLfYl"
+      tenant_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:sandbox/aegaeon-messaging-RzLfYl"
+      service_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:sandbox/aegaeon-messaging-RzLfYl"
+      db_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:sandbox/db-secrets-zB1aJB"
+
+  name: aegaeonmessaging
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 80%
+  maxUnavailable: 20%
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: /ping
+  containerPort: 3000
+  args: ["source /tmp/secret && ./main"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    INSTANCE: production
+    INSTANCE_TYPE: server
+    PORT: 3000
+    CREDENTIAL_PROVIDER: secret_manager
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 2048m
+      memory: 2048Mi
+    requests:
+      cpu: 1024m
+      memory: 1024Mi
+
+schemaregistry: 
+  name: schemaregistry
+  pdbMaxUnAvailable: 20%
+  replicaCount: 2
+  maxSurge: 80%
+  maxUnavailable: 20%
+  serviceaccount: {}
+  pdb: true
+  kindofcomponent: {}
+  healthCheckPath: {}
+  containerPort: {}
+  bash: {}
+  args: {}
+  sidecar: {}
+  antiaffinity: true
+  node_group_type: web
+
+  env:
+    SCHEMA_REGISTRY_HOST_NAME: kafka-schema-registry.punchh.internal
+    SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kafka-broker-1.punchh.internal:9092,kafka-broker-2.punchh.internal:9092,kafka-broker-3.punchh.internal:9092
+
+  healthcheck:
+    enabled: {}
+  service:
+    enabled: {}
+    restapi: {}
+  resources:
+    limits:
+      cpu: "2"
+      memory: 4Gi
+    requests:
+      cpu: "1"
+      memory: 2Gi
+
+images:
+  aegaeonemail: punchh/aegaeon-email-service
+  aegaeonmessaging: punchh/aegaeon-messaging-server
+  aegaeonoutbound: punchh/aegaeon-outbound-server

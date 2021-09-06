@@ -1,0 +1,18 @@
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: jbcouponsprocessor
+  annotations:
+    helm.sh/hook: "post-upgrade, post-install"
+    helm.sh/hook-delete-policy: "before-hook-creation"
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/version: {{ .Chart.Version }}
+    app.kubernetes.io/part-of: worker
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Chart.Name }}
+      app.kubernetes.io/version: {{ .Chart.Version }}
+      app.kubernetes.io/part-of: worker
+  maxUnavailable: {{ .Values.jbcouponsprocessor.pdbMaxUnAvailable }}

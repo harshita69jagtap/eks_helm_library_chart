@@ -1,0 +1,18 @@
+{{- if .Values.jbemailprocessormarketing.hpa.enabled }}
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpa-jbemailprocessormarketing
+spec:
+  scaleTargetRef:
+    apiVersion: extensions/v1beta1
+    kind: Deployment
+    name: jbemailprocessormarketing
+  minReplicas: 1
+  maxReplicas: {{ .Values.jbemailprocessormarketing.hpa.maxReplicas }}
+  metrics:
+  - type: Resource
+    resource:
+      name: {{ .Values.jbemailprocessormarketing.hpa.type }}
+      targetAverageUtilization: {{ .Values.global.common.hpa.targetAverageUtilization }}
+{{ end }}

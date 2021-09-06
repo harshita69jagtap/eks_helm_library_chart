@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "go-kafka-{{.Values.gokafkareactor.consumerType | lower}}-reactor-{{.Values.gokafkareactor.tag}}"
+spec:
+  replicas: {{.Values.gokafkareactor.replicaCount}}
+  selector:
+    matchLabels:
+      app: go-kafka-{{.Values.gokafkareactor.consumerType | lower}}-reactor
+  template:
+    metadata:
+      labels:
+        app: go-kafka-{{.Values.gokafkareactor.consumerType | lower}}-reactor
+    spec:
+      containers:
+        - name: go-kafka-{{.Values.gokafkareactor.consumerType | lower}}-reactor
+          ports:
+            - containerPort: 80
+          image: "{{.Values.images.gokafkareactor}}:{{.Values.gokafkareactor.tag}}"
+          imagePullPolicy: {{ .Values.global.common.pullPolicy }}
+          env:
+            - name: KAFKA_URL
+              value: {{.Values.gokafkareactor.kafkaURL}}
+            - name: KAFKA_TOPIC
+              value: {{.Values.gokafkareactor.kafkaTopic}}
+            - name: KAFKA_GROUP
+              value: {{.Values.gokafkareactor.kafkaGroup}}
+            - name: CONSUMER_TYPE
+              value: {{.Values.gokafkareactor.consumerType}}
+            - name: SCHEMA_REGISTRY_URL
+              value: {{.Values.gokafkareactor.schemaRegistryUrl}}
+            - name: TRANSIENT_RETRY_INTERVAL
+              value: {{.Values.gokafkareactor.transientRetryInterval | quote}}
+            - name: TRANSIENT_RETRY_ATTEMPTS
+              value: {{.Values.gokafkareactor.transientRetryAttempts | quote}}
+            - name: WEBHOOK_SVC_URL
+              value: {{.Values.gokafkareactor.webHookSvcURL}}
+            - name: TENANT_NAME
+              value: {{.Values.gokafkareactor.tenant}}
+            - name: GO_ENV
+              value: {{.Values.gokafkareactor.goENV}}
+            - name: AIRBRAKE_PROJECT_ID
+              value: {{.Values.gokafkareactor.airbrakeProjectID | quote}}
+            - name: AIRBRAKE_PROJECT_KEY
+              value: {{.Values.gokafkareactor.airbrakeProjectKey| quote}}
+            - name: NEW_RELIC_APP_NAME
+              value: {{.Values.gokafkareactor.newRelicAppName| quote}}
+            - name: NEW_RELIC_APP_LICENSE
+              value: {{.Values.gokafkareactor.newrelicAppLicense| quote}}

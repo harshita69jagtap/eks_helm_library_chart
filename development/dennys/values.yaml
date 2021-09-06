@@ -1,0 +1,189 @@
+global:
+  common:
+    imagePullSecrets: regcred
+    pullPolicy: IfNotPresent
+
+    service:
+      type: ClusterIP
+      port: 80
+
+    serviceAccount:
+      create: false
+    env:
+      TENANT: dennys
+      TENANT_NAME: dennys
+      VAULT_HOST: https://vault.punchh.com
+      BUILD_NUMBER: "1"
+
+    livenessProbe:
+      initialDelaySeconds: 90
+      periodSeconds: 30
+      successThreshold: 1
+      timeoutSeconds: 5
+    readinessProbe:
+      initialDelaySeconds: 45
+      periodSeconds: 15
+      successThreshold: 1
+      timeoutSeconds: 5
+
+    podSecurityContext: {}
+    securityContext: {}
+
+campaignshowpage:
+  initcontainer:
+    env:
+      global_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:dennys/campaign-show-page-Y0FqBv"
+      tenant_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:dennys/campaign-show-page-Y0FqBv"
+      service_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:dennys/campaign-show-page-Y0FqBv"
+      db_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:dennys/db-secrets-Viaj3J"
+
+  name: campaignshowpage
+  pdbMaxUnAvailable: 20%
+  replicaCount: 2
+  maxSurge: 80%
+  maxUnavailable: 20%
+  serviceaccount: secrets-manager
+  pdb: true
+  kindofcomponent: api
+  healthCheckPath: /healthz
+  containerPort: 8080
+  args: ["source /tmp/secret && ./server"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    AWS_REGION: us-east-1
+    ENVIRONMENT: production
+    CREDENTIAL_PROVIDER: secret_manager
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1000Mi
+    requests:
+      cpu: 250m
+      memory: 500Mi
+
+kafkaconnect:
+  name: kafkaconnect
+  pdbMaxUnAvailable: 20%
+  replicaCount: 2
+  maxSurge: 80%
+  maxUnavailable: 20%
+
+  env:
+    CONNECT_BOOTSTRAP_SERVERS: "kafka-broker-1.punchh.internal:9092,kafka-broker-2.punchh.internal:9092,kafka-broker-3.punchh.internal:9092"
+    S3_BUCKET_SENDGRID_SINK: "sendgrid-kafka-punchh-dennys-stream" 
+    CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 2
+    CONNECT_CONFIG_STORAGE_TOPIC: 3000
+    CONNECT_GROUP_ID: kafka-connect
+    CONNECT_INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+    CONNECT_INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+    CONNECT_KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
+    CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: http://kafka-schema-registry.punchh.internal
+    CONNECT_LOG4J_LOGGERS: org.apache.kafka.connect.runtime.rest=WARN,org.reflections=ERROR
+    CONNECT_LOG4J_ROOT_LOGLEVEL: INFO
+    CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 2
+    CONNECT_OFFSET_STORAGE_TOPIC: _kafka-connect-offsets
+    CONNECT_PLUGIN_PATH: "/usr/share/java,/usr/share/confluent-hub-components/,/connectors/"
+    CONNECT_REST_PORT: "8083"
+    CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 2
+    CONNECT_STATUS_STORAGE_TOPIC: _kafka-connect-status
+    CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
+    CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://kafka-schema-registry.punchh.internal
+    KAFKA_HEAP_OPTS: "-Xmx4G -Xms4G -XshowSettings:vm"
+    S3_REGION_SENDGRID_SINK: "us-east-1"
+    S3_BUCKET_SENDGRID_FLUSH_SIZE: "10000"
+    KAFKA_TOPIC_SENDGRID_SINK: "sendgrid-events"
+
+  resources:
+    limits:
+      cpu: 2048m
+      memory: 5120Mi
+    requests:
+      cpu: 1024m
+      memory: 4096Mi        
+
+jbemailprocessor:
+  name: jbemailprocessor
+  pdbMaxUnAvailable: 20%
+  replicaCount: 3
+  maxSurge: 80%
+  maxUnavailable: 20%
+
+  env:
+    CACHE_TIMEOUT: 60s
+    CONSUMER_TYPE: EMAIL
+    GO_ENV: production
+    KAFKA_GROUP: JB
+    KAFKA_TOPIC: sendgrid-events
+    NEW_RELIC_APP_NAME: jb-email-processor
+    DASHBOARD_SVC_URL: campaign-reward-api.punchh.internal:80
+    USER_FEATURES_SVC_URL: user-features.punchh.internal:80
+    KAFKA_URL: "kafka-broker-1.punchh.internal:9092,kafka-broker-2.punchh.internal:9092,kafka-broker-3.punchh.internal:9092"
+
+  resources:
+    limits:
+      cpu: 2048m
+      memory: 2048Mi
+    requests:
+      cpu: 2048m
+      memory: 1536Mi
+
+gokafkaemailsubreactor:
+  name: gokafkaemailsubreactor
+  pdbMaxUnAvailable: 20%
+  replicaCount: 3
+  maxSurge: 80%
+  maxUnavailable: 20%
+
+  env:
+    CACHE_TIMEOUT: 60s
+    CONSUMER_TYPE: emailsub
+    GO_ENV: production
+    KAFKA_GROUP: emailsub
+    KAFKA_TOPIC: sendgrid-events
+    SCHEMA_REGISTRY_URL: http://kafka-schema-registry.punchh.internal/
+    TRANSIENT_RETRY_INTERVAL: 60s
+    TRANSIENT_RETRY_ATTEMPTS: 3
+    WEBHOOK_SVC_URL: https://hooks.punchhdennys.com/incoming_webhooks/sendgrid
+    NEW_RELIC_APP_NAME: go-kafka-emailsub-reactor
+    KAFKA_URL: "kafka-broker-1.punchh.internal:9092,kafka-broker-2.punchh.internal:9092,kafka-broker-3.punchh.internal:9092"
+
+  resources:
+    limits:
+      cpu: 2048m
+      memory: 2048Mi
+    requests:
+      cpu: 2048m
+      memory: 1536Mi
+
+
+images:
+  campaigns: punchh/shippable
+  jbapi: punchh/jb-api
+  jbapigateway: punchh/jb-api-gateway
+  messaging: punchh/shippable-messaging-service
+  jbinternalapi: punchh/jb-api
+  jbmessagingrest: punchh/shippable-messaging-service
+  jbdashboardrest: punchh/shippable
+  userfeaturesinternal: punchh/common_user_features
+  jbredemptionsprocessor: punchh/jb-event-processor
+  jbworkerpool: punchh/jb-workerpool-service
+  jbcampaignprocessor: punchh/jb-event-processor
+  jbemailprocessor: punchh/jb-event-processor
+  jbsignupprocessor: punchh/jb-event-processor
+  jbpurchaseprocessor: punchh/jb-event-processor
+  jbcouponsprocessor: punchh/jb-event-processor
+  campaignshowpage: punchh/csp-foundation
+  jbschemamigration: punchh/jb-datastore-schema
+  jbemailprocessormarketing: punchh/jb-event-processor
+  jbemailprocessortransactional: punchh/jb-event-processor
+  gokafkaemailsubreactor: punchh/go-kafka-reactor
+  kafkaconnect: punchh/kafka-connect

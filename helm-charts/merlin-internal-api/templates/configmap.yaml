@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: merlin-internal
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/version: {{ .Chart.Version }}
+    app.kubernetes.io/part-of: api
+data:
+  init.sh: |
+    #!/bin/bash
+    echo $global_secrets_arn
+    region=$(echo $global_secrets_arn | awk -F':' '{print $4}')
+    global_secrets=$(aws secretsmanager get-secret-value --secret-id $global_secrets_arn --region $region | jq .SecretString)
+    tenant_secrets=$(aws secretsmanager get-secret-value --secret-id $tenant_secrets_arn --region $region | jq .SecretString)
+    service_secrets=$(aws secretsmanager get-secret-value --secret-id $service_secrets_arn --region $region | jq .SecretString)
+    db_secrets=$(aws secretsmanager get-secret-value --secret-id $db_secrets_arn --region $region | jq .SecretString)
+    echo "global_secrets=$global_secrets" > /mnt/secret
+    echo "tenant_secrets=$tenant_secrets" >> /mnt/secret
+    echo "service_secrets=$service_secrets" >> /mnt/secret
+    echo "db_secrets=$db_secrets" >> /mnt/secret

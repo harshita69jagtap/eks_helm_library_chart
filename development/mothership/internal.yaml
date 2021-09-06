@@ -1,0 +1,69 @@
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/group.name: mothership-internal
+    alb.ingress.kubernetes.io/healthcheck-path: /ping
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:711940833208:certificate/7363294a-b025-450a-bf9e-59bde55eb29b
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    alb.ingress.kubernetes.io/scheme: internal
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/tags: Environment=Production,Team=DevOps
+  name: internal
+  namespace: mothership
+spec:
+  rules:
+  - host: aegaeonoutbound.punchh.internal
+    http:
+      paths:
+      - backend:
+          serviceName: aegaeonoutbound
+          servicePort: 80
+
+  - host: aegaeonpayments.punchh.internal
+    http:
+      paths:
+      - backend:
+          serviceName: aegaeonpayments
+          servicePort: 80
+
+  - host: aegaeongiftcards.punchh.internal
+    http:
+      paths:
+      - backend:
+          serviceName: aegaeongiftcard
+          servicePort: 80
+          
+  - host: aegaeonemail.punchh.internal
+    http:
+      paths:
+      - backend:
+          serviceName: aegaeonemail
+          servicePort: 80   
+
+--- 
+
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/group.name: mothership-internal
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:711940833208:certificate/7363294a-b025-450a-bf9e-59bde55eb29b
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    alb.ingress.kubernetes.io/scheme: internal
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/tags: Environment=Production,Team=DevOps
+  name: kafka-connect.punchh.internal
+  namespace: mothership
+spec:
+  rules:
+  - host: kafka-connect.punchh.internal
+    http:
+      paths:
+      - backend:
+          serviceName: kafkaconnect
+          servicePort: 80

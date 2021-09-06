@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: datalake-airflow-web
+  labels:
+    app: datalake-airflow-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: datalake-airflow-web
+  template:
+    metadata:
+      labels:
+        app: datalake-airflow-web
+    spec:
+      securityContext:
+        runAsUser: 0
+        fsGroup: 0
+      containers:
+      - name: {{ .Values.datalake.web.name }}
+        image: {{ .Values.images.airflow }}:{{ index .Values.tags "datalake-airflow" }}
+        command: [ "/bin/bash" , "-c" ]
+        args: [ "cp -L /dags/* /usr/local/airflow/dags/ ; /entrypoint.sh webserver" ]
+        imagePullPolicy: {{ .Values.global.common.pullPolicy }}
+        ports:
+        - name: {{ .Values.datalake.web.name }}
+          containerPort: {{ .Values.datalake.web.port }}
+          protocol: TCP
+        resources:
+          {{- toYaml .Values.datalake.web.resources | nindent 10 }}
+        env:
+{{- range $key, $value := .Values.global.common.env }}
+        - name: {{ $key }}
+          value: {{ $value | quote }}
+{{- end }}
+{{- range $key, $value := .Values.datalake.web.env }}
+        - name: {{ $key }}
+          value: {{ $value | quote }}
+{{- end }}
+        - name: AIRFLOW__CORE__SQL_ALCHEMY_CONN
+          value: {{ .Values.global.common.env.db_con1 }}://{{ .Values.global.common.env.DB_USER }}:{{ .Values.global.common.env.DB_PASSWORD }}@{{ .Values.global.common.env.DB_HOST }}:5432/{{ .Values.global.common.env.DB_NAME_AIRFLOW }}
+        - name: AIRFLOW__CELERY__RESULT_BACKEND
+          value: {{ .Values.global.common.env.db_con2 }}://{{ .Values.global.common.env.DB_USER }}:{{ .Values.global.common.env.DB_PASSWORD }}@{{ .Values.global.common.env.DB_HOST }}:5432/{{ .Values.global.common.env.DB_NAME_AIRFLOW }}
+        - name: REDIS_HOST
+          value: datalake-airflow-redis-svc.{{ .Release.Namespace }}
+        volumeMounts:
+        - name: efs-share
+          mountPath: /usr/local/airflow/dags
+        - name: dags-configmap
+          mountPath: /dags
+      volumes:
+      - name: efs-share
+        persistentVolumeClaim:
+          claimName: efs-claim
+      - name: dags-configmap
+        configMap:
+          name: datalake-airflow-datalake-dags

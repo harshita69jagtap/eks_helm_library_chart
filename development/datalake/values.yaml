@@ -1,0 +1,111 @@
+global:
+  common:
+    imagePullSecrets: regcred
+    pullPolicy: Always
+
+    service:
+      type: ClusterIP
+      port: 80
+
+    env:
+      BUILD_NUMBER: "1"
+      EXECUTOR: Celery
+      DB_HOST: postgres.datalake
+      DB_USER: postgresadmin
+      DB_PASSWORD: mysql321
+      DB_PORT: "5432"
+      DB_NAME_AIRFLOW: postgresdb
+      REDIS_PORT: "80"
+#       db_con1: postgresql
+#       db_con2: postgresql
+      db_con1: postgresql+psycopg2
+      db_con2: db+postgresql
+
+datalake:
+  web:
+    name: web
+    port: 8080
+    args: webserver
+    resources:
+      limits:
+        cpu: 0.5
+        memory: 2G
+      requests:
+        cpu: 0.25
+        memory: 1G
+    env:
+      LOAD_EX: "n"
+      FERNET_KEY: 46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
+
+  flower:
+    name: flower
+    port: 5555
+    args: flower
+    resources:
+      limits:
+        cpu: 0.5
+        memory: 2G
+      requests:
+        cpu: 0.25
+        memory: 1G
+    env:
+      SNOWFLAKE_DBUSER: zone247
+
+  scheduler:
+    name: scheduler
+    args: scheduler
+    resources:
+      limits:
+        cpu: 0.5
+        memory: 2G
+      requests:
+        cpu: 0.25
+        memory: 1G
+    env:
+      LOAD_EX: "n"
+      FERNET_KEY: 46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
+      SNOWFLAKE_DBUSER: zone247
+
+  worker:
+    name: worker
+    port: 8793
+    args: worker
+    resources:
+      limits:
+        cpu: 0.5
+        memory: 4G
+      requests:
+        cpu: 0.25
+        memory: 2G
+    env:
+      LOAD_EX: "n"
+      FERNET_KEY: 46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
+      SNOWFLAKE_DBUSER: zone247
+      SNOWFLAKE_DBROLE: ZONE24x7
+    volume1: dagsdata
+    volume1path: /dags
+
+  redis:
+    name: redis
+    image: redis:latest
+    port: 6379
+    resources:
+      limits:
+        cpu: 0.5
+        memory: 4G
+      requests:
+        cpu: 0.25
+        memory: 2G
+
+
+# volumes:
+#   efs:
+#     mountPath: /usr/local/airflow/dags
+  # worker:
+  #   app: worker
+  #   capacity: 5Gi
+  #   className: datalake-worker
+
+
+images:
+  airflow: 653800670028.dkr.ecr.us-east-2.amazonaws.com/datalake-airflow

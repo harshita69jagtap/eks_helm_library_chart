@@ -1,0 +1,30 @@
+{
+    "Comment": "australia route53 record set creation for internal hosted zone",
+    "Changes": [
+      {
+        "Action": "UPSERT",
+        "ResourceRecordSet": {
+          "Name": "dashboard-rest.punchh.internal",
+          "Type": "A",
+          "AliasTarget": {
+            "HostedZoneId": "Z1GM3OXH4ZPM65",
+            "DNSName": "dualstack.internal-k8s-australiainternal-27d6c04b8a-812216981.ap-southeast-2.elb.amazonaws.com.",
+            "EvaluateTargetHealth": false
+          }
+        }
+      },
+      
+      {
+        "Action": "UPSERT",
+        "ResourceRecordSet": {
+          "Name": "messaging-rest.punchh.internal",
+          "Type": "A",
+          "AliasTarget": {
+            "HostedZoneId": "Z1GM3OXH4ZPM65",
+            "DNSName": "dualstack.internal-k8s-australiainternal-27d6c04b8a-812216981.ap-southeast-2.elb.amazonaws.com.",
+            "EvaluateTargetHealth": false
+          }
+        }
+      }
+    ]
+}

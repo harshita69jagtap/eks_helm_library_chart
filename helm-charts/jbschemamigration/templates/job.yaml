@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: jbschemamigration
+spec:
+  ttlSecondsAfterFinished: 600
+  template:
+    spec:
+      imagePullSecrets:
+        - name: {{ .Values.global.common.imagePullSecrets }}
+      containers:
+        - name: jbschemamigration
+          image: punchh/jb-datastore-schema:{{ .Values.tags.jbschemamigration }}
+          imagePullPolicy: Always
+          env:
+{{- range $key, $value := .Values.global.common.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+{{- end }}
+{{- range $key, $value := .Values.jbschemamigration.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+{{- end }}
+            - name: VAULT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: vault
+                  key: VAULT_TOKEN
+      restartPolicy: Never

@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: campaigns
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/version: {{ .Chart.Version }}
+    app.kubernetes.io/part-of: api
+spec:
+  replicas: {{ .Values.campaigns.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: {{ .Values.campaigns.maxSurge }}
+      maxUnavailable: {{ .Values.campaigns.maxUnavailable }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Chart.Name }}
+      app.kubernetes.io/version: {{ .Chart.Version }}
+      app.kubernetes.io/part-of: api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Chart.Name }}
+        app.kubernetes.io/version: {{ .Chart.Version }}
+        app.kubernetes.io/part-of: api
+    spec:
+      imagePullSecrets:
+        - name: {{ .Values.global.common.imagePullSecrets }}
+    {{- if .Values.global.common.serviceAccount.create }}
+      serviceAccountName: campaigns
+    {{- end }}
+      securityContext:
+        {{- toYaml .Values.global.common.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Values.campaigns.name }}
+          securityContext:
+            {{- toYaml .Values.global.common.securityContext | nindent 12 }}
+          image: {{ .Values.images.campaigns }}:{{ .Values.tags.rails }}
+          imagePullPolicy: {{ .Values.global.common.pullPolicy }}
+          ports:
+           - name: campaigns
+             containerPort: 9093
+             protocol: TCP
+          readinessProbe:	
+            tcpSocket:	
+              port: 9093	
+            initialDelaySeconds: {{ .Values.global.common.readinessProbe.initialDelaySeconds }}	
+            periodSeconds: {{ .Values.global.common.readinessProbe.periodSeconds }}	
+            timeoutSeconds: {{ .Values.global.common.readinessProbe.timeoutSeconds }}	
+            successThreshold: {{ .Values.global.common.readinessProbe.successThreshold }}	
+          livenessProbe:	
+            tcpSocket:	
+              port: 9093	
+            initialDelaySeconds: {{ .Values.global.common.livenessProbe.initialDelaySeconds }}	
+            periodSeconds: {{ .Values.global.common.livenessProbe.periodSeconds }}	
+            timeoutSeconds: {{ .Values.global.common.readinessProbe.timeoutSeconds }}	
+            successThreshold: {{ .Values.global.common.readinessProbe.successThreshold }}
+          resources:
+            {{- toYaml .Values.campaigns.resources | nindent 12 }}
+          env:
+{{- range $key, $value := .Values.global.common.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+{{- end }}
+{{- range $key, $value := .Values.campaigns.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+{{- end }}
+            - name: NAMESPACE
+              value: {{ .Release.Namespace }}
+            - name: VAULT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: vault
+                  key: VAULT_TOKEN
+      nodeSelector:
+        node_group_type: web

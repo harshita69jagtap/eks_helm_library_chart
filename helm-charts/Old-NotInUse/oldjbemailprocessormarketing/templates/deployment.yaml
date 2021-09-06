@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jbemailprocessormarketing
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/version: {{ .Chart.Version }}
+    app.kubernetes.io/part-of: worker
+spec:
+  replicas: {{ .Values.jbemailprocessormarketing.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: {{ .Values.jbemailprocessormarketing.maxSurge }}
+      maxUnavailable: {{ .Values.jbemailprocessormarketing.maxUnavailable }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Chart.Name }}
+      app.kubernetes.io/version: {{ .Chart.Version }}
+      app.kubernetes.io/part-of: worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Chart.Name }}
+        app.kubernetes.io/version: {{ .Chart.Version }}
+        app.kubernetes.io/part-of: worker
+    spec:
+      imagePullSecrets:
+        - name: {{ .Values.global.common.imagePullSecrets }}
+    {{- if .Values.global.common.serviceAccount.create }}
+      serviceAccountName: jbemailprocessormarketing
+    {{- end }}
+      securityContext:
+        {{- toYaml .Values.global.common.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Values.jbemailprocessormarketing.name }}
+          securityContext:
+            {{- toYaml .Values.global.common.securityContext | nindent 12 }}
+          image: {{ .Values.images.jbemailprocessormarketing }}:{{ .Values.tags.jbeventprocessor }}
+          imagePullPolicy: {{ .Values.global.common.pullPolicy }}
+          resources:
+            {{- toYaml .Values.jbemailprocessormarketing.resources | nindent 12 }}
+          env:
+{{- range $key, $value := .Values.global.common.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+{{- end }}
+{{- range $key, $value := .Values.jbemailprocessormarketing.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+{{- end }}
+            - name: AIRBRAKE_PROJECT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: stack-credentials
+                  key: AIRBRAKE_PROJECT_ID
+            - name: AIRBRAKE_PROJECT_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: stack-credentials
+                  key: AIRBRAKE_PROJECT_KEY
+            - name: NEW_RELIC_APP_LICENSE
+              valueFrom:
+                secretKeyRef:
+                  name: stack-credentials
+                  key: NEWRELIC_LICENSE_KEY
+            - name: VAULT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: vault
+                  key: VAULT_TOKEN
+      nodeSelector:
+        node_group_type: worker

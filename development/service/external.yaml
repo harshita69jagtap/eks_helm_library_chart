@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/group.name: sandbox-internet-facing
+    alb.ingress.kubernetes.io/healthcheck-path: /
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:060724984176:certificate/b15bf233-5c2e-4c93-a96f-246f842cd740
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/tags: Environment=Sandbox,Team=DevOps
+  name: redash
+  namespace: service
+spec:
+  rules:
+  - host: redash.punchh.com
+    http:
+      paths:
+      - backend:
+          serviceName: redash
+          servicePort: 80

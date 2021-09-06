@@ -1,0 +1,2105 @@
+global:
+  common:
+    imagePullSecrets: regcred
+    pullPolicy: Always
+
+    service:
+      type: ClusterIP
+      port: 80
+
+    env:
+      TENANT_NAME: mothership
+      TENANT: mothership
+      RACK_ENV: staging
+      RAILS_ENV: staging
+      JENKINS_BUILD_NUMBER: "1"
+      VAULT_ADDR: https://vault.punchh.io
+
+    livenessProbe:
+      initialDelaySeconds: 90
+      periodSeconds: 30
+      successThreshold: 1
+      timeoutSeconds: 5
+    readinessProbe:
+      initialDelaySeconds: 45
+      periodSeconds: 15
+      successThreshold: 1
+      timeoutSeconds: 5
+
+    podSecurityContext:
+      fsGroup: 1000
+    securityContext: {}
+
+rails:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/punchh-server-Web-wBG799
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: rails
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: /ping
+  containerPort: 8080
+  bash: true
+  args: ["source /tmp/secret && bash /etc/service/appserver/run"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+
+  env:
+    ROLE_ARN: arn:aws:iam::232720106935:role/punchh-development-secret-manager-access
+    SERVICE_TYPE: Web
+    CREDENTIAL_PROVIDER: secret_manager
+    ENABLE_RAILS: true
+    UNICORN_WORKER_PROCESSES: 8
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 4000Mi
+    requests:
+      cpu: 1000m
+      memory: 3000Mi
+
+workers:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/punchh-server-Worker-YqOt4B
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: workers
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: worker
+  healthCheckPath: /ping
+  containerPort: 8080
+  bash: true
+  args: ["source /tmp/secret && bash /etc/service/appserver/run"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: worker
+
+  env:
+    SERVICE_TYPE: Worker
+    CREDENTIAL_PROVIDER: secret_manager
+    ENABLE_SIDEKIQ: all
+    REDIS_YML: config/better_redis.yml
+    UNICORN_WORKER_PROCESSES: 8
+    SIDEKIQ_THREADS: 4
+
+  healthcheck:
+    enabled: false
+  service:
+    enabled: false
+    restapi: true
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi
+
+
+isl:
+  name: isl
+  maxSurge: 0
+  maxUnavailable:  1
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+
+  database:
+    name: punchh_production
+    user: root
+    password: ""
+
+  env:
+    REDIS_NAMESPACE: staging
+    PUMA_MAX_THREADS: 4
+    PUMA_MIN_THREADS: 4
+    REDIS_PORT: 6379
+    PUMA_WORKERS: 4
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi
+
+
+segments:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/segments-vkYBCn
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: segments
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable:  1
+  pdbMaxUnAvailable: 40%
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: /ping
+  containerPort: 8080
+  bash: true
+  args: ["source /tmp/secret && bash docker/appserver.sh"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    ENABLE_RAILS: true
+    UNICORN_WORKER_PROCESSES: 4
+    CREDENTIAL_PROVIDER: secret_manager
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi
+
+
+stats:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/stats-0qXhRR
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: stats
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  pdbMaxUnAvailable: 40%
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: /ping
+  containerPort: 8080
+  bash: true
+  args: ["source /tmp/secret && bash docker/appserver.sh"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    ENABLE_RAILS: true
+    UNICORN_WORKER_PROCESSES: 4
+    CREDENTIAL_PROVIDER: secret_manager
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi
+
+complexsegment:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/complexsegment-kxAuAY
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: complexsegment
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  pdbMaxUnAvailable: 40%
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: {}
+  containerPort: 9091
+  bash: false
+  args: ["source /tmp/secret && /complex-segment-computer"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    CREDENTIAL_PROVIDER: secret_manager
+    APPLICATION_PORT: 9091
+    APPLICATION_ENV: staging
+    SEGMENT_SERVICE_URL: grpc:80
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    grpc: true
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi
+
+
+grpc:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/segments-vkYBCn
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: grpc
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  pdbMaxUnAvailable: 40%
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: {}
+  containerPort: 9090
+  bash: true
+  args: ["source /tmp/secret && bash docker/appserver.sh"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    CREDENTIAL_PROVIDER: secret_manager
+    ENABLE_GRPC: True
+    GRPC_POOL_SIZE: 5
+    GRPC_PORT: 9090
+    COMPLEX_SEGMENT_SERVICE_URL: complexsegment
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    grpc: true
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi
+
+
+emailtemplate:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:Development/email-templates-esCuv7
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: emailtemplate
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: /api/v1/email-template/health
+  containerPort: 8080
+  command: ["/bin/sh", "-c"]
+  args: ["source /tmp/secret && ./server"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    GOMAXPROCS: 1
+    CREDENTIAL_PROVIDER: secret_manager
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi
+
+eventframeworkserver:
+  initcontainer:
+    env:
+      global_secrets_arn:  arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/eventframework-U8Y7Ud
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: eventframeworkserver
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: /ping
+  containerPort: 3000
+  command: ["/bin/sh", "-c"]
+  args: ["source /tmp/secret && ./main"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    INSTANCE: development
+    INSTANCE_TYPE: server
+    PORT: 3000
+    CREDENTIAL_PROVIDER: secret_manager
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi
+
+
+eventframeworkworker:
+  initcontainer:
+    env:
+      global_secrets_arn:  arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/eventframework-U8Y7Ud
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: eventframeworkworker
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: worker
+  healthCheckPath: /ping
+  containerPort: 3000
+  command: ["/bin/sh", "-c"]
+  args: ["source /tmp/secret && ./main"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: worker
+
+  env:
+    INSTANCE: development
+    INSTANCE_TYPE: worker
+    PORT: 3000
+    CREDENTIAL_PROVIDER: secret_manager
+
+  healthcheck:
+    enabled: false
+  service:
+    enabled: false
+    restapi: true
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi
+
+
+aegaeonoutbound:
+  initcontainer:
+    env:
+      global_secrets_arn:  arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/helios-ENbStP
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: aegaeonoutbound
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: /ping
+  containerPort: 3000
+  args: ["source /tmp/secret && ./main"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    INSTANCE: development
+    INSTANCE_TYPE: server
+    PORT: 3000
+    CREDENTIAL_PROVIDER: secret_manager
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi
+
+aegaeongiftcard:
+  initcontainer:
+    env:
+      global_secrets_arn:  arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/helios-ENbStP
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: aegaeongiftcard
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: /ping
+  containerPort: 3000
+  args: ["source /tmp/secret && ./main"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    INSTANCE: development
+    INSTANCE_TYPE: server
+    PORT: 3000
+    CREDENTIAL_PROVIDER: secret_manager
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi
+
+aegaeonmessaging:
+  initcontainer:
+    env:
+      global_secrets_arn:  arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/helios-messaging-kaBP88
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: aegaeonmessaging
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: /ping
+  containerPort: 3000
+  args: ["source /tmp/secret && ./main"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    INSTANCE: development
+    INSTANCE_TYPE: server
+    PORT: 3000
+    CREDENTIAL_PROVIDER: secret_manager
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi
+
+aegaeonpayments:
+  initcontainer:
+    env:
+      global_secrets_arn:  arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/helios-payments-OFxEVa
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: aegaeonpayments
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: /ping
+  containerPort: 3000
+  args: ["source /tmp/secret && ./main"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    INSTANCE: development
+    INSTANCE_TYPE: server
+    PORT: 3000
+    CREDENTIAL_PROVIDER: secret_manager
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi
+
+aegaeonemail:
+  initcontainer:
+    env:
+      global_secrets_arn:  arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/helios-email-CUZrXo
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: aegaeonemail
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: /ping
+  containerPort: 3000
+  args: ["source /tmp/secret && ./main"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    INSTANCE: development
+    INSTANCE_TYPE: server
+    PORT: 3000
+    CREDENTIAL_PROVIDER: secret_manager
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi
+
+aegaeonexport:
+  initcontainer:
+    env:
+      global_secrets_arn:  arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/helios-export-epXMYj
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: aegaeonexport
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: /ping
+  containerPort: 3000
+  args: ["source /tmp/secret && ./main"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    INSTANCE: development
+    NEWRELIC_APP_NAME: aegaeon-export-app
+    NEWRELIC_LICENSE_KEY: myluoetzoqnsvzzsttwefpnqhxigxfezcuzbgdko
+    INSTANCE_TYPE: server
+    PORT: 3000
+    CREDENTIAL_PROVIDER: secret_manager
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi
+
+campaignshowpage:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/campaign-show-page-MbvVTo
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: campaignshowpage
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: /healthz
+  containerPort: 8080
+  args: ["source /tmp/secret && ./server"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    GOMAXPROCS: 1
+    CREDENTIAL_PROVIDER: secret_manager
+    AWS_REGION: us-east-1
+    ENVIRONMENT: development
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi
+
+sfservicecloud:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/sfservicecloud-OMOkpB
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: sfservicecloud
+  pdbMaxUnAvailable: 40%
+  replicaCount: 2
+  maxSurge: 40%
+  maxUnavailable: 40%
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: /api/v1/health
+  containerPort: 8080
+  args: ["source /tmp/secret && ./server"]
+  sidecar: false
+  antiaffinity: true
+  node_group_type: web
+
+  env:
+    GOMAXPROCS: 1
+    CREDENTIAL_PROVIDER: secret_manager
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi
+
+gokafkareactor:
+  kafkaURL: development-punchh-broker-1.punchh.internal:9092
+  kafkaTopic: sendgrid-events-marketing
+  replicaCount: 1
+  kafkaGroup: emailsub
+  consumerType: emailsub
+  schemaRegistryUrl: "http://schema-registry.punchh.io"
+  transientRetryInterval: 60s
+  transientRestryAttempts: 3
+  webHookSvcURL: http://hooks.punchh.io
+  tag: latest
+  tenant: mothership
+  goENV: staging
+  airbrakeProjectKey: 0
+  airbrakeProjectID: 0
+  newRelicAppName: go-kafka-emailsub-reactor-dev
+  newrelicAppLicense: myluoetzoqnsvzzsttwefpnqhxigxfezcuzbgdko
+
+jbapi:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/journeys-xLrP2m
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: jbapi
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: {}
+  containerPort: 50051
+  bash: false
+  args: ["source /tmp/secret && /jb-api"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    CREDENTIAL_PROVIDER: secret_manager
+    GO_ENV: staging
+    SNOWFLAKE_DB: DEV
+    SNOWFLAKE_SCHEMA: MOTHERSHIP
+    JB_INTERNAL_PORT: :50051
+    DASHBOARD_SERVICE_HOST: campaigns:80
+
+  healthcheck:
+    enabled: {}
+  service:
+    enabled: true
+    restapi: {}
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi
+
+jbapigateway:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/journeys-xLrP2m
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: jbapigateway
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: /ping
+  containerPort: 80
+  bash: false
+  args: ["source /tmp/secret && /jb-api-gateway"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    CREDENTIAL_PROVIDER: secret_manager
+    GO_ENV: staging
+    JWT_KEY: "vue_secret"
+    GRPC_HOST_PORT: jbapi:80
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 256m
+      memory: 256Mi
+    requests:
+      cpu: 256m
+      memory: 256Mi
+
+campaigns:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/campaigns-ypabbz
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: campaigns
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: {}
+  containerPort: 9093
+  bash: true
+  args: ["source /tmp/secret && bash /etc/service/appserver/run"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    CREDENTIAL_PROVIDER: secret_manager
+    ENABLE_GRPC: True
+    GRPC_POOL_SIZE: 4
+    GRPC_PORT: 9093
+    RAILS_MAX_THREADS: 10
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    grpc: true
+  resources:
+    limits:
+      cpu: 2048m
+      memory: 4096Mi
+    requests:
+      cpu: 1536m
+      memory: 2048Mi
+
+messaging:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/journeys-xLrP2m
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: messaging
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: {}
+  containerPort: 9092
+  bash: true
+  args: ["source /tmp/secret && bash docker/appserver.sh"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    CREDENTIAL_PROVIDER: secret_manager
+    GRPC_POOL_SIZE: 4
+    GRPC_PORT: 9092
+    NEWRELIC_APP_NAME: Development Messaging Service
+    RAILS_MAX_THREADS: 10
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    grpc: true
+  resources:
+    limits:
+      cpu: 1024m
+      memory: 2048Mi
+    requests:
+      cpu: 1024m
+      memory: 2048Mi
+
+jbinternalapi:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/journeys-xLrP2m
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: jbinternalapi
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: {}
+  containerPort: 9091
+  bash: {}
+  args: ["source /tmp/secret && /jb-api"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    CREDENTIAL_PROVIDER: secret_manager
+    GO_ENV: staging
+    SNOWFLAKE_DB: DEV
+    SNOWFLAKE_SCHEMA: MOTHERSHIP
+    JB_INTERNAL_PORT: :9091
+    DASHBOARD_SERVICE_HOST: campaigns:9093
+    ENABLE_GRPC: True
+    GRPC_POOL_SIZE: 5
+
+  healthcheck:
+    enabled: {}
+  service:
+    enabled: true
+    grpc: true
+  resources:
+    limits:
+      cpu: 512m
+      memory: 512Mi
+    requests:
+      cpu: 512m
+      memory: 512Mi
+
+jbmessagingrest:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/journeys-xLrP2m
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: jbmessagingrest
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 100%
+  maxUnavailable: 20%
+  serviceaccount: secrets-manager
+  pdb: true
+  kindofcomponent: api
+  healthCheckPath: /ping
+  containerPort: 8080
+  bash: true
+  args: ["source /tmp/secret && bash /etc/service/appserver/run"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    RACK_ENV: production
+    RAILS_ENV: production
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi
+
+jbdashboardrest:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/journeys-xLrP2m
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: jbdashboardrest
+  pdbMaxUnAvailable: 40%
+  replicaCount: 2
+  maxSurge: 100%
+  maxUnavailable: 20%
+  serviceaccount: secrets-manager
+  pdb: true
+  kindofcomponent: api
+  healthCheckPath: /ping
+  containerPort: 8080
+  bash: true
+  args: ["source /tmp/secret && bash /etc/service/appserver/run"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    ENABLE_APIS_FOR_INTERNAL_LOAD_BALANCER: True
+    RACK_ENV: production
+    RAILS_ENV: production
+    ENABLE_RAILS: True
+    NEWRELIC_APP_NAME: "Caseys Internal Dashboard API"
+    SERVICE_TYPE: Web
+    UNICORN_TIMEOUT: 60
+    UNICORN_WORKER_PROCESSES: 10
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi
+
+userfeaturesinternal:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/journeys-xLrP2m
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: userfeaturesinternal
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: {}
+  containerPort: 50051
+  bash: false
+  args: ["source /tmp/secret && ./app"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    GO_ENV: staging
+    SNOWFLAKE_DB: JB_DEV
+    SNOWFLAKE_SCHEMA: JB_STG
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    grpc: true
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi
+
+jbredemptionsprocessor:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/journeys-xLrP2m
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: jbredemptionsprocessor
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: worker
+  healthCheckPath: false
+  containerPort: 80
+  bash: false
+  args: ["source /tmp/secret && /app"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: worker
+
+  env:
+    CACHE_TIMEOUT: 60s
+    CONSUMER_TYPE: REDEMPTIONS
+    GO_ENV: staging
+    KAFKA_GROUP: JB
+    KAFKA_TOPIC: mothership.punchh_server.redemptions.honor
+    NEW_RELIC_APP_NAME: jb-redemptions-processor
+    DASHBOARD_SVC_URL: campaigns:80
+    USER_FEATURES_SVC_URL: userfeaturesinternal:80
+    KAFKA_URL: "development-punchh-broker-1.punchh.internal:9092"
+    CADENCE_URL: "cadence-frontend.infra:7933"
+    CADENCE_DOMAIN: jb-test
+    SCHEMA_REGISTRY_URL: http://kafka-schema-registry.punchh.internal
+
+  healthcheck:
+    enabled: false
+  service:
+    enabled: false
+    restapi: {}
+  resources:
+    limits:
+      cpu: 256m
+      memory: 256Mi
+    requests:
+      cpu: 128m
+      memory: 128Mi
+
+jbworkerpool:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/journeys-xLrP2m
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: jbworkerpool
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: worker
+  healthCheckPath: false
+  containerPort: 80
+  bash: false
+  args: ["source /tmp/secret && /service"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: worker
+
+  env:
+    CADENCE_HOST: cadence-frontend.infra:7933
+    CASSANDRA_HOST: cassandra.punchh.internal
+    DASHBOARD_SERVICE_HOST: campaigns:80
+    CADENCE_DOMAIN: jb-test
+    ENVIRONMENT: staging
+    KAFKA_HOST: "development-punchh-broker-1.punchh.internal:9092"
+    KAFKA_TOPIC: mothership.jb.events
+    MESSAGING_SERVICE_HOST: messaging:80
+    NEW_RELIC_APP_NAME: jb-workerpool-service
+    CASSANDRA_KEYSPACE: jb
+    REGISTRY_HOST: http://kafka-schema-registry.punchh.internal
+    USER_FEATURES_SERVICE_HOST: userfeaturesinternal:80
+    ELASTIC_SEARCH_SERVICE_HOST: https://vpc-test-es-7-9-ma3kvmnwk35ret2wfk7t3rrhlm.us-east-1.es.amazonaws.com
+
+  healthcheck:
+    enabled: false
+  service:
+    enabled: false
+    restapi: {}
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi
+
+jbcampaignprocessor:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/journeys-xLrP2m
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: jbcampaignprocessor
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: worker
+  healthCheckPath: false
+  containerPort: 80
+  bash: false
+  args: ["source /tmp/secret && /app"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: worker
+
+  env:
+    CACHE_TIMEOUT: 60s
+    GO_ENV: staging
+    CONSUMER_TYPE: CAMPAIGN
+    KAFKA_GROUP: JB
+    KAFKA_TOPIC: mothership.punchh_server.user_campaigns
+    NEW_RELIC_APP_NAME: jb-campaign-processor
+    DASHBOARD_SVC_URL: campaigns:80
+    USER_FEATURES_SVC_URL: userfeaturesinternal:80
+    KAFKA_URL: "development-punchh-broker-1.punchh.internal:9092"
+    CADENCE_URL: "cadence-frontend.infra:7933"
+    CADENCE_DOMAIN: jb-test
+    SCHEMA_REGISTRY_URL: http://kafka-schema-registry.punchh.internal
+
+  healthcheck:
+    enabled: false
+  service:
+    enabled: false
+    restapi: {}
+  resources:
+    limits:
+      cpu: 256m
+      memory: 256Mi
+    requests:
+      cpu: 128m
+      memory: 128Mi
+
+jbemailprocessor:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/journeys-xLrP2m
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: jbemailprocessor
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: worker
+  healthCheckPath: false
+  containerPort: 80
+  bash: false
+  args: ["source /tmp/secret && /app"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: worker
+
+  env:
+    CONSUMER_TYPE: EMAIL
+    CACHE_TIMEOUT: 60s
+    GO_ENV: staging
+    KAFKA_GROUP: JB
+    KAFKA_TOPIC: sendgrid-events-webhook
+    NEW_RELIC_APP_NAME: jb-campaign-processor
+    DASHBOARD_SVC_URL: campaigns:80
+    USER_FEATURES_SVC_URL: userfeaturesinternal:80
+    KAFKA_URL: "development-punchh-broker-1.punchh.internal:9092"
+    CADENCE_URL: "cadence-frontend.infra:7933"
+    CADENCE_DOMAIN: jb-test
+    SCHEMA_REGISTRY_URL: http://kafka-schema-registry.punchh.internal
+
+  healthcheck:
+    enabled: false
+  service:
+    enabled: false
+    restapi: {}
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi
+
+jbemailprocessormarketing:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/journeys-xLrP2m
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: jbemailprocessormarketing
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: worker
+  healthCheckPath: false
+  containerPort: 80
+  bash: false
+  args: ["source /tmp/secret && /app"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: worker
+
+  env:
+    CACHE_TIMEOUT: 60s
+    CONSUMER_TYPE: EMAIL
+    GO_ENV: staging
+    KAFKA_GROUP: JB
+    KAFKA_TOPIC: sendgrid-events-marketing
+    NEW_RELIC_APP_NAME: jb-email-processor-marketing
+    DASHBOARD_SVC_URL: campaigns:80
+    USER_FEATURES_SVC_URL: userfeaturesinternal:80
+    KAFKA_URL: "development-punchh-broker-1.punchh.internal:9092"
+    CADENCE_URL: "cadence-frontend.infra:7933"
+    CADENCE_DOMAIN: jb-test
+    SCHEMA_REGISTRY_URL: http://kafka-schema-registry.punchh.internal
+
+  healthcheck:
+    enabled: false
+  service:
+    enabled: false
+    restapi: {}
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi
+
+jbemailprocessortransactional:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/journeys-xLrP2m
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: jbemailprocessortransactional
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: worker
+  healthCheckPath: false
+  containerPort: 80
+  bash: false
+  args: ["source /tmp/secret && /app"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: worker
+
+  env:
+    CACHE_TIMEOUT: 60s
+    CONSUMER_TYPE: EMAIL
+    GO_ENV: staging
+    KAFKA_GROUP: JB
+    KAFKA_TOPIC: sendgrid-events-transactional
+    NEW_RELIC_APP_NAME: jb-email-processor-transactional
+    DASHBOARD_SVC_URL: campaigns:80
+    USER_FEATURES_SVC_URL: userfeaturesinternal:80
+    KAFKA_URL: "development-punchh-broker-1.punchh.internal:9092"
+    CADENCE_URL: "cadence-frontend.infra:7933"
+    CADENCE_DOMAIN: jb-test
+    SCHEMA_REGISTRY_URL: http://kafka-schema-registry.punchh.internal
+
+  healthcheck:
+    enabled: false
+  service:
+    enabled: false
+    restapi: {}
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi
+
+jbsignupprocessor:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/journeys-xLrP2m
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: jbsignupprocessor
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: worker
+  healthCheckPath: false
+  containerPort: 80
+  bash: false
+  args: ["source /tmp/secret && /app"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: worker
+
+  env:
+    CACHE_TIMEOUT: 60s
+    CONSUMER_TYPE: SIGNUP
+    GO_ENV: staging
+    KAFKA_GROUP: JB
+    KAFKA_TOPIC: mothership.punchh_server.users
+    NEW_RELIC_APP_NAME: jb-signup-processor
+    DASHBOARD_SVC_URL: campaigns:80
+    USER_FEATURES_SVC_URL: userfeaturesinternal:80
+    KAFKA_URL: "development-punchh-broker-1.punchh.internal:9092"
+    CADENCE_URL: "cadence-frontend.infra:7933"
+    CADENCE_DOMAIN: jb-test
+    SCHEMA_REGISTRY_URL: http://kafka-schema-registry.punchh.internal
+
+  healthcheck:
+    enabled: false
+  service:
+    enabled: false
+    restapi: {}
+  resources:
+    limits:
+      cpu: 256m
+      memory: 256Mi
+    requests:
+      cpu: 128m
+      memory: 128Mi
+
+jbpurchaseprocessor:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/journeys-xLrP2m
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: jbpurchaseprocessor
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: worker
+  healthCheckPath: false
+  containerPort: 80
+  bash: false
+  args: ["source /tmp/secret && /app"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: worker
+
+  env:
+    CACHE_TIMEOUT: 60s
+    CONSUMER_TYPE: PURCHASE
+    GO_ENV: staging
+    KAFKA_GROUP: JB
+    KAFKA_TOPIC: mothership.punchh_server.checkins
+    NEW_RELIC_APP_NAME: jb-purchase-processor
+    DASHBOARD_SVC_URL: campaigns:80
+    USER_FEATURES_SVC_URL: userfeaturesinternal:80
+    KAFKA_URL: "development-punchh-broker-1.punchh.internal:9092"
+    CADENCE_URL: "cadence-frontend.infra:7933"
+    CADENCE_DOMAIN: jb-test
+    SCHEMA_REGISTRY_URL: http://kafka-schema-registry.punchh.internal
+
+  healthcheck:
+    enabled: false
+  service:
+    enabled: false
+    restapi: {}
+  resources:
+    limits:
+      cpu: 256m
+      memory: 256Mi
+    requests:
+      cpu: 128m
+      memory: 128Mi
+
+jbcouponsprocessor:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/journeys-xLrP2m
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: jbcouponsprocessor
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: worker
+  healthCheckPath: false
+  containerPort: 80
+  bash: false
+  args: ["source /tmp/secret && /app"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: worker
+
+  env:
+    CACHE_TIMEOUT: 60s
+    CONSUMER_TYPE: COUPONS
+    GO_ENV: staging
+    KAFKA_GROUP: JB
+    KAFKA_TOPIC: mothership.punchh_server.user_coupon_redemptions
+    NEW_RELIC_APP_NAME: jb-coupons-processor
+    DASHBOARD_SVC_URL: campaigns:80
+    USER_FEATURES_SVC_URL: userfeaturesinternal80
+    KAFKA_URL: "development-punchh-broker-1.punchh.internal:9092"
+    CADENCE_URL: "cadence-frontend.infra:7933"
+    CADENCE_DOMAIN: jb-test
+    SCHEMA_REGISTRY_URL: http://kafka-schema-registry.punchh.internal
+
+  healthcheck:
+    enabled: false
+  service:
+    enabled: false
+    restapi: {}
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi
+
+gokafkaemailsubreactor:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+
+  name: gokafkaemailsubreactor
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: worker
+  healthCheckPath: false
+  containerPort: 80
+  bash: false
+  args: ["source /tmp/secret && /app"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: worker
+
+  env:
+    CACHE_TIMEOUT: 60s
+    CONSUMER_TYPE: emailsub
+    GO_ENV: staging
+    KAFKA_GROUP: emailsub
+    KAFKA_TOPIC: sendgrid-events-marketing
+    SCHEMA_REGISTRY_URL: http://kafka-schema-registry.punchh.internal
+    TRANSIENT_RETRY_INTERVAL: 60s
+    TRANSIENT_RETRY_ATTEMPTS: 3
+    WEBHOOK_SVC_URL: "https://development.punchh.io/incoming_webhooks/sendgrid"
+    NEW_RELIC_APP_NAME: go-kafka-emailsub-reactor
+    KAFKA_URL: "development-punchh-broker-1.punchh.internal:9092"
+
+  healthcheck:
+    enabled: false
+  service:
+    enabled: {}
+    restapi: false
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi
+
+gokafkaemailsendgridpost:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+
+  name: gokafkaemailsendgridpost
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: worker
+  healthCheckPath: false
+  containerPort: 80
+  bash: false
+  args: ["source /tmp/secret && /app"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: worker
+
+  env:
+    CACHE_TIMEOUT: 60s
+    CONSUMER_TYPE: sendgridpost
+    GO_ENV: staging
+    KAFKA_GROUP: sendgridpost
+    KAFKA_TOPIC: sendgrid-events
+    SCHEMA_REGISTRY_URL: http://kafka-schema-registry.punchh.internal
+    TRANSIENT_RETRY_INTERVAL: 60s
+    TRANSIENT_RETRY_ATTEMPTS: 3
+    WEBHOOK_SVC_URL: "https://development.punchh.io/incoming_webhooks/sendgrid"
+    NEW_RELIC_APP_NAME: go-kafka-sendgridpost-reactor
+    KAFKA_URL: "development-punchh-broker-1.punchh.internal:9092"
+    WEBHOOK_SVC_SECRET: ""
+
+  healthcheck:
+    enabled: false
+  service:
+    enabled: {}
+    restapi: false
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi
+
+kafkaconnect:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+
+  name: kafkaconnect
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+
+  env:
+    CONNECT_BOOTSTRAP_SERVERS: "development-punchh-broker-1.punchh.internal:9092"
+    S3_BUCKET_SENDGRID_SINK: "sendgrid-kafka-development-stream"
+    CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 2
+    CONNECT_CONFIG_STORAGE_TOPIC: 3000
+    CONNECT_GROUP_ID: kafka-connect
+    CONNECT_INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+    CONNECT_INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+    CONNECT_KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
+    CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: http://kafka-schema-registry.punchh.internal
+    CONNECT_LOG4J_LOGGERS: org.apache.kafka.connect.runtime.rest=WARN,org.reflections=ERROR
+    CONNECT_LOG4J_ROOT_LOGLEVEL: INFO
+    CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 2
+    CONNECT_OFFSET_STORAGE_TOPIC: _kafka-connect-offsets
+    CONNECT_PLUGIN_PATH: "/usr/share/java,/usr/share/confluent-hub-components/,/connectors/"
+    CONNECT_REST_PORT: "8083"
+    CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 2
+    CONNECT_STATUS_STORAGE_TOPIC: _kafka-connect-status
+    CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
+    CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://kafka-schema-registry.punchh.internal
+    KAFKA_HEAP_OPTS: "-Xmx4G -Xms4G -XshowSettings:vm"
+    S3_REGION_SENDGRID_SINK: "us-east-1"
+    S3_BUCKET_SENDGRID_FLUSH_SIZE: "10000"
+
+  hpa:
+    enabled: false
+    maxReplicas: 100
+    type: memory
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi
+
+jbschemamigration:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/punchh-server-Web-wBG799
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: jbschemamigration
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: /ping
+  containerPort: 8080
+  bash: false
+  args: ["source /tmp/secret && /app"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    CASSANDRA_URL: cassandra.punchh.internal
+    SNOWFLAKE_DB: DEV
+    GO_ENV: staging
+    SNOWFLAKE_SCHEMA: MOTHERSHIP
+    CASSANDRA_KEYSPACE: jb
+
+  resources:
+    limits:
+      cpu: 256m
+      memory: 256Mi
+    requests:
+      cpu: 128m
+      memory: 128Mi
+
+merlinweb:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/merlin-1Unv06
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: merlinweb
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: {}
+  containerPort: 50051
+  bash: false
+  args: ["source /tmp/secret && ./app"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    GO_ENV: development
+    SCHEMA: merlin
+    DATABASE: sandbox
+    SCIENCE_URL: xpstatsutils:80
+    DASHBOARD_URL: dashboardrest:80
+
+  healthcheck:
+    enabled: false
+  service:
+    enabled: true
+    restapi: false
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi
+
+merlininternalapi:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/merlin-1Unv06
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: merlininternalapi
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: /ping
+  containerPort: 80
+  bash: false
+  args: ["source /tmp/secret && ./merlin-internal-api"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    GO_ENV: development
+    DATABASE: SANDBOX
+    SCHEMA: MERLIN
+    SCIENCE_URL: xpstatsutils:80
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi
+
+merlingateway:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/merlin-1Unv06
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: merlingateway
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: /ping
+  containerPort: 80
+  bash: false
+  args: ["source /tmp/secret && ./app"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    GO_ENV: staging
+    GRPC_ADDR: merlinweb:80
+    RESTADDR: "80"
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi
+
+xpstatsutils:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/merlin-1Unv06
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: xpstatsutils
+  pdbMaxUnAvailable: 40%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: /ping
+  containerPort: 5000
+  bash: true
+  args: ["source /tmp/secret && ./gunicorn_start.sh"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    VARIABLE_NAME: flask_app
+    MODULE_NAME: xp_science.apis
+    WEB_CONCURRENCY: 4
+    PORT: 5000
+    NEW_RELIC_APP_NAME: xp_science
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi
+
+schemaregistry:
+  name: schemaregistry
+  pdbMaxUnAvailable: 20%
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable: 1
+  serviceaccount: {}
+  pdb: false
+  kindofcomponent: {}
+  healthCheckPath: {}
+  containerPort: {}
+  bash: {}
+  args: {}
+  sidecar: {}
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    SCHEMA_REGISTRY_HOST_NAME: ecs-schema-registry.punchh.internal
+    SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kafka-broker-1.punchh.internal:9092,kafka-broker-2.punchh.internal:9092,kafka-broker-3.punchh.internal:9092
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: "2"
+      memory: 4Gi
+    requests:
+      cpu: "1"
+      memory: 2Gi
+      
+transactionreconciliation:
+  initcontainer:
+    env:
+      global_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:global_secrets-g0uyIE
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development_secrets-E77gAo
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/transaction-reconciliation-betwXJ
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:232720106935:secret:development/db-secrets-EDy4SW
+
+  name: transactionreconciliation
+  replicaCount: 1
+  maxSurge: 0
+  maxUnavailable:  1
+  pdbMaxUnAvailable: 40%
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: /matched_transactions
+  containerPort: 9090
+  bash: false
+  command: ["/bin/sh", "-c"]
+  args: ["source /tmp/secret && /transaction-reconciliation"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    ENABLE_RAILS: true
+    UNICORN_WORKER_PROCESSES: 4
+    CREDENTIAL_PROVIDER: secret_manager
+    APPLICATION_ENV: staging
+    APPLICATION_PORT: 9090
+    
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 512m
+      memory: 1024Mi
+    requests:
+      cpu: 256m
+      memory: 512Mi  
+
+images:
+  rails: punchh/shippable
+  workers: punchh/shippable
+  stats: punchh/shippable-stats-service
+  segments: punchh/shippable-segments-service
+  emailtemplate: punchh/emailtemplate
+  eventframeworkserver: punchh/eventwebhook
+  eventframeworkworker: punchh/eventwebhook
+  campaignshowpage: punchh/csp-foundation
+  aegaeonoutbound: punchh/aegaeon-outbound-server
+  aegaeongiftcard: punchh/aegaeon-giftcard-server
+  aegaeonpayments: punchh/aegaeon-payment-server
+  aegaeonexport: punchh/aegaeon-export-service
+  gokafkareactor: punchh/go-kafka-reactor
+  aegaeonmessaging: punchh/aegaeon-messaging-server
+  sfservicecloud: punchh/sfservicecloud
+  campaigns: punchh/shippable
+  jbapi: punchh/jb-api
+  jbapigateway: punchh/jb-api-gateway
+  messaging: punchh/shippable-messaging-service
+  jbinternalapi: punchh/jb-api
+  jbmessagingrest: punchh/shippable-messaging-service
+  jbdashboardrest: punchh/shippable
+  userfeaturesinternal: punchh/common_user_features
+  jbredemptionsprocessor: punchh/jb-event-processor
+  jbworkerpool: punchh/jb-workerpool-service
+  jbcampaignprocessor: punchh/jb-event-processor
+  jbemailprocessor: punchh/jb-event-processor
+  jbsignupprocessor: punchh/jb-event-processor
+  jbpurchaseprocessor: punchh/jb-event-processor
+  jbcouponsprocessor: punchh/jb-event-processor
+  jbemailprocessormarketing: punchh/jb-event-processor
+  jbemailprocessortransactional: punchh/jb-event-processor
+  aegaeonemail: punchh/aegaeon-email-service
+  merlingateway: punchh/merlin-api-gateway
+  merlinweb: punchh/merlin-api-web
+  merlininternalapi: punchh/merlin-internal-api
+  xpstatsutils: punchh/xp_science
+  gokafkaemailsubreactor: punchh/go-kafka-reactor
+  kafkaconnect: punchh/kafka-connect
+  gokafkaemailsendgridpost: punchh/go-kafka-reactor
+  complexsegment: punchh/shippable-complexsegment
+  grpc: punchh/shippable-segments-service
+  transactionreconciliation: punchh/shippable-transaction-reconciliation

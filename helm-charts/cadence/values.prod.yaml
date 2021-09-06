@@ -1,0 +1,38 @@
+server:
+  podAnnotations:
+    prometheus.io/scrape: 'true'
+    prometheus.io/port: '9090'
+
+  config:
+    persistence:
+      default:
+        driver: cassandra # cassandra or sql
+
+        cassandra:
+          hosts: cassandra.punchh.internal
+          port: 9042
+          keyspace: cadence
+          consistency: One
+          # user: Cassandra
+          # password: cassandra
+
+      visibility:
+        driver: cassandra # cassandra or sql
+
+        cassandra:
+          hosts: cassandra.punchh.internal
+          port: 9042
+          keyspace: cadence_visibility
+          consistency: One
+          # user: Cassandra
+          # password: cassandra
+
+schema:
+  setup: false
+  update: false
+
+cassandra:
+  enabled: false
+
+mysql:
+  enabled: false

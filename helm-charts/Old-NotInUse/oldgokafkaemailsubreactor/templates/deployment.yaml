@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gokafkaemailsubreactor
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/version: {{ .Chart.Version }}
+    app.kubernetes.io/part-of: worker
+spec:
+  replicas: {{ .Values.gokafkaemailsubreactor.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: {{ .Values.gokafkaemailsubreactor.maxSurge }}
+      maxUnavailable: {{ .Values.gokafkaemailsubreactor.maxUnavailable }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Chart.Name }}
+      app.kubernetes.io/version: {{ .Chart.Version }}
+      app.kubernetes.io/part-of: worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Chart.Name }}
+        app.kubernetes.io/version: {{ .Chart.Version }}
+        app.kubernetes.io/part-of: worker
+    spec:
+      imagePullSecrets:
+        - name: {{ .Values.global.common.imagePullSecrets }}
+    {{- if .Values.global.common.serviceAccount.create }}
+      serviceAccountName: gokafkaemailsubreactor
+    {{- end }}
+      securityContext:
+        {{- toYaml .Values.global.common.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Values.gokafkaemailsubreactor.name }}
+          securityContext:
+            {{- toYaml .Values.global.common.securityContext | nindent 12 }}
+          image: {{ .Values.images.gokafkaemailsubreactor }}:{{ .Values.tags.gokafkareactor }}
+          imagePullPolicy: {{ .Values.global.common.pullPolicy }}
+          resources:
+            {{- toYaml .Values.gokafkaemailsubreactor.resources | nindent 12 }}
+          env:
+{{- range $key, $value := .Values.global.common.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+{{- end }}
+{{- range $key, $value := .Values.gokafkaemailsubreactor.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+{{- end }}
+            - name: AIRBRAKE_PROJECT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: stack-credentials
+                  key: AIRBRAKE_PROJECT_ID
+            - name: AIRBRAKE_PROJECT_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: stack-credentials
+                  key: AIRBRAKE_PROJECT_KEY
+            - name: NEW_RELIC_APP_LICENSE
+              valueFrom:
+                secretKeyRef:
+                  name: stack-credentials
+                  key: NEWRELIC_LICENSE_KEY
+      nodeSelector:
+        node_group_type: worker

@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: userfeaturesinternal
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/version: {{ .Chart.Version }}
+    app.kubernetes.io/part-of: api
+spec:
+  replicas: {{ .Values.userfeaturesinternal.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: {{ .Values.userfeaturesinternal.maxSurge }}
+      maxUnavailable: {{ .Values.userfeaturesinternal.maxUnavailable }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Chart.Name }}
+      app.kubernetes.io/version: {{ .Chart.Version }}
+      app.kubernetes.io/part-of: api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Chart.Name }}
+        app.kubernetes.io/version: {{ .Chart.Version }}
+        app.kubernetes.io/part-of: api
+    spec:
+      imagePullSecrets:
+        - name: {{ .Values.global.common.imagePullSecrets }}
+    {{- if .Values.global.common.serviceAccount.create }}
+      serviceAccountName: userfeaturesinternal
+    {{- end }}
+      securityContext:
+        {{- toYaml .Values.global.common.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Values.userfeaturesinternal.name }}
+          securityContext:
+            {{- toYaml .Values.global.common.securityContext | nindent 12 }}
+          image: {{ .Values.images.userfeaturesinternal }}:{{ .Values.tags.userfeaturesinternal }}
+          imagePullPolicy: {{ .Values.global.common.pullPolicy }}
+          ports:
+            - name: app
+              containerPort: 50051
+              protocol: TCP
+          readinessProbe:	
+            tcpSocket:	
+              port: 50051	
+            initialDelaySeconds: {{ .Values.global.common.readinessProbe.initialDelaySeconds }}	
+            periodSeconds: {{ .Values.global.common.readinessProbe.periodSeconds }}	
+            timeoutSeconds: {{ .Values.global.common.readinessProbe.timeoutSeconds }}	
+            successThreshold: {{ .Values.global.common.readinessProbe.successThreshold }}	
+          livenessProbe:	
+            tcpSocket:	
+              port: 50051	
+            initialDelaySeconds: {{ .Values.global.common.livenessProbe.initialDelaySeconds }}	
+            periodSeconds: {{ .Values.global.common.livenessProbe.periodSeconds }}	
+            timeoutSeconds: {{ .Values.global.common.readinessProbe.timeoutSeconds }}	
+            successThreshold: {{ .Values.global.common.readinessProbe.successThreshold }}
+          resources:
+            {{- toYaml .Values.userfeaturesinternal.resources | nindent 12 }}
+          env:
+{{- range $key, $value := .Values.global.common.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+{{- end }}
+{{- range $key, $value := .Values.userfeaturesinternal.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+{{- end }}
+            - name: AIRBRAKE_PROJECT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: stack-credentials
+                  key: AIRBRAKE_PROJECT_ID
+            - name: AIRBRAKE_PROJECT_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: stack-credentials
+                  key: AIRBRAKE_PROJECT_KEY
+            - name: NEWRELIC_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: stack-credentials
+                  key: NEWRELIC_LICENSE_KEY
+            - name: VAULT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: vault
+                  key: VAULT_TOKEN
+      nodeSelector:
+        node_group_type: web

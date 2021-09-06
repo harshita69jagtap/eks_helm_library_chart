@@ -1,0 +1,18 @@
+{{- if .Values.schemaregistry.pdb }}
+
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: schemaregistry
+  annotations:
+    helm.sh/hook: "post-upgrade, post-install"
+    helm.sh/hook-delete-policy: "before-hook-creation"
+  labels:
+    app: schemaregistry
+spec:
+  selector:
+    matchLabels:
+      app: schemaregistry
+  maxUnavailable: {{ .Values.schemaregistry.pdbMaxUnAvailable }}
+
+{{ end }}

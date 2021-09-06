@@ -1,0 +1,49 @@
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/group.name: dairyqueen-internet-facing
+    alb.ingress.kubernetes.io/healthcheck-path: /healthz
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-west-2:793800672737:certificate/9473c6fa-d618-4ea0-b92e-cb20b51d7e4a
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/tags: Environment=Production,Team=DevOps
+  name: campaignshowpage
+  namespace: dairyqueen
+spec:
+  rules:
+  - host: csp-dq.punchh.com
+    http:
+      paths:
+      - backend:
+          serviceName: campaignshowpage
+          servicePort: 80
+
+--- 
+
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/group.name: dairyqueen-internet-facing
+    alb.ingress.kubernetes.io/healthcheck-path: /ping
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-west-2:793800672737:certificate/9473c6fa-d618-4ea0-b92e-cb20b51d7e4a
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/tags: Environment=Production,Team=DevOps
+  name: jbapigateway
+  namespace: dairyqueen
+spec:
+  rules:
+  - host: jbdq.punchh.com
+    http:
+      paths:
+      - backend:
+          serviceName: jbapigateway
+          servicePort: 80

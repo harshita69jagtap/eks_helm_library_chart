@@ -1,0 +1,736 @@
+global:
+  common:
+    imagePullSecrets: regcred
+    pullPolicy: IfNotPresent
+
+    service:
+      type: ClusterIP
+      port: 80
+
+    serviceAccount:
+      create: false
+    env:
+      TENANT: tacobell
+      TENANT_NAME: tacobell
+      VAULT_HOST: https://vault.punchh.com
+      BUILD_NUMBER: "1"
+
+    livenessProbe:
+      initialDelaySeconds: 90
+      periodSeconds: 30
+      successThreshold: 1
+      timeoutSeconds: 5
+    readinessProbe:
+      initialDelaySeconds: 45
+      periodSeconds: 15
+      successThreshold: 1
+      timeoutSeconds: 5
+
+    podSecurityContext: {}
+    securityContext: {}
+
+
+jbapi:
+  name: jbapi
+  pdbMaxUnAvailable: 20%
+  replicaCount: 3
+  maxSurge: 80%
+  maxUnavailable: 20%
+
+  env:
+    GO_ENV: production
+    SNOWFLAKE_DB: DATA_ENGINEERING_PRODUCTION
+    SNOWFLAKE_SCHEMA: tacobell
+    JB_INTERNAL_PORT: :50051
+    DASHBOARD_SERVICE_HOST: campaigns.tacobell:9093
+
+  resources:
+    limits:
+      cpu: 512m
+      memory: 512Mi
+    requests:
+      cpu: 512m
+      memory: 512Mi
+
+jbapigateway:
+  name: jbapigateway
+  pdbMaxUnAvailable: 20%
+  replicaCount: 3
+  maxSurge: 80%
+  maxUnavailable: 20%
+
+  env:
+    GO_ENV: production
+    CORS_ALLOW_ORIGIN: https://dashboard.punchhtacobell.com
+    JWT_KEY: ""
+    GRPC_HOST_PORT: jbapi.tacobell:80
+
+  resources:
+    limits:
+      cpu: 256m
+      memory: 256Mi
+    requests:
+      cpu: 256m
+      memory: 256Mi
+
+campaigns:
+  name: campaigns
+  pdbMaxUnAvailable: 20%
+  replicaCount: 3
+  maxSurge: 80%
+  maxUnavailable: 20%
+
+  env:
+    ENABLE_GRPC: True
+    GRPC_POOL_SIZE: 24
+    GRPC_PORT: 9093
+    RACK_ENV: production
+    RAILS_ENV: production
+    SERVICE_TYPE: CapaignRewardGRPC
+
+  resources:
+    limits:
+      cpu: 2048m
+      memory: 4096Mi
+    requests:
+      cpu: 1536m
+      memory: 2048Mi
+
+messaging:
+  name: messaging
+  pdbMaxUnAvailable: 20%
+  replicaCount: 3
+  maxSurge: 80%
+  maxUnavailable: 20%
+
+  env:
+    GRPC_POOL_SIZE: 24
+    GRPC_PORT: 9092
+    RACK_ENV: production
+    RAILS_ENV: production
+    NEWRELIC_APP_NAME: Tacobell Messaging Service
+    RAILS_MAX_THREADS: 10
+
+  resources:
+    limits:
+      cpu: 1024m
+      memory: 2048Mi
+    requests:
+      cpu: 1024m
+      memory: 2048Mi
+
+jbinternalapi:
+  name: jbinternalapi
+  pdbMaxUnAvailable: 20%
+  replicaCount: 3
+  maxSurge: 80%
+  maxUnavailable: 20%
+
+  env:
+    GO_ENV: production
+    SNOWFLAKE_DB: DATA_ENGINEERING_PRODUCTION
+    SNOWFLAKE_SCHEMA: tacobell
+    JB_INTERNAL_PORT: :9091
+    ENABLE_GRPC: True
+    GRPC_POOL_SIZE: 5
+    DASHBOARD_SERVICE_HOST: campaigns.tacobell:9093
+
+  resources:
+    limits:
+      cpu: 2048m
+      memory: 1536Mi
+    requests:
+      cpu: 2048m
+      memory: 1024Mi
+
+jbmessagingrest:
+  name: jbmessagingrest
+  pdbMaxUnAvailable: 20%
+  replicaCount: 2
+  maxSurge: 80%
+  maxUnavailable: 20%
+
+  env:
+    RACK_ENV: production
+    RAILS_ENV: production
+
+  resources:
+    limits:
+      cpu: 2048m
+      memory: 1536Mi
+    requests:
+      cpu: 2048m
+      memory: 1024Mi
+
+jbdashboardrest:
+  name: jbdashboardrest
+  pdbMaxUnAvailable: 20%
+  replicaCount: 2
+  maxSurge: 80%
+  maxUnavailable: 20%
+
+  env:
+    ENABLE_APIS_FOR_INTERNAL_LOAD_BALANCER: True
+    RACK_ENV: production
+    RAILS_ENV: production
+    ENABLE_RAILS: True
+    NEWRELIC_APP_NAME: "Tacobell Internal Dashboard API"
+    SERVICE_TYPE: Web
+    UNICORN_TIMEOUT: 60
+    UNICORN_WORKER_PROCESSES: 10
+
+  resources:
+    limits:
+      cpu: 3072m
+      memory: 7168Mi
+    requests:
+      cpu: 3072m
+      memory: 6144Mi
+
+userfeaturesinternal:
+  name: userfeaturesinternal
+  pdbMaxUnAvailable: 20%
+  replicaCount: 3
+  maxSurge: 80%
+  maxUnavailable: 20%
+
+  env:
+    GO_ENV: production
+    SNOWFLAKE_DB: DATA_ENGINEERING_PRODUCTION
+    SNOWFLAKE_SCHEMA: tacobell
+
+  resources:
+    limits:
+      cpu: 1024m
+      memory: 1024Mi
+    requests:
+      cpu: 1024m
+      memory: 512Mi
+
+jbredemptionsprocessor:
+  name: jbredemptionsprocessor
+  pdbMaxUnAvailable: 20%
+  replicaCount: 3
+  maxSurge: 80%
+  maxUnavailable: 20%
+
+  env:
+    CACHE_TIMEOUT: 60s
+    CONSUMER_TYPE: REDEMPTIONS
+    GO_ENV: production
+    KAFKA_GROUP: JB
+    KAFKA_TOPIC: tacobell.punchh_server.redemptions.honor
+    NEW_RELIC_APP_NAME: jb-redemptions-processor
+    DASHBOARD_SVC_URL: campaigns.tacobell:9093
+    USER_FEATURES_SVC_URL: userfeaturesinternal.tacobell:80
+    KAFKA_URL: "kafka-broker-1.punchh.internal:9092,kafka-broker-2.punchh.internal:9092,kafka-broker-3.punchh.internal:9092"
+
+  resources:
+    limits:
+      cpu: 256m
+      memory: 256Mi
+    requests:
+      cpu: 128m
+      memory: 128Mi
+
+jbworkerpool:
+  name: jbworkerpool
+  pdbMaxUnAvailable: 20%
+  replicaCount: 3
+  maxSurge: 80%
+  maxUnavailable: 20%
+
+  env:
+    CADENCE_HOST: cadence.punchh.internal:7933
+    CASSANDRA_HOST: cassandra.punchh.internal
+    DASHBOARD_SERVICE_HOST: campaigns.tacobell:9093
+    ENVIRONMENT: production
+    KAFKA_HOST: kafka-broker-1.punchh.internal:9092
+    KAFKA_TOPIC: tacobell.jb.events
+    MESSAGING_SERVICE_HOST: messaging.tacobell:9092
+    NEW_RELIC_APP_NAME: jb-workerpool-service
+    REGISTRY_HOST: http://kafka-schema-registry.punchh.internal
+    USER_FEATURES_SERVICE_HOST: userfeaturesinternal.tacobell:80
+    ELASTIC_SEARCH_SERVICE_HOST: https://vpc-tacobell-elasticsearch-w2bacroxeh2qwathxsgnqfuxx4.us-east-1.es.amazonaws.com
+
+  resources:
+    limits:
+      cpu: 3072m
+      memory: 4096Mi
+    requests:
+      cpu: 3072m
+      memory: 2048Mi
+
+jbcampaignprocessor:
+  name: jbcampaignprocessor
+  pdbMaxUnAvailable: 20%
+  replicaCount: 3
+  maxSurge: 80%
+  maxUnavailable: 20%
+
+  env:
+    CACHE_TIMEOUT: 60s
+    CONSUMER_TYPE: CAMPAIGN
+    GO_ENV: production
+    KAFKA_GROUP: JB
+    KAFKA_TOPIC: tacobell.punchh_server.user_campaigns
+    NEW_RELIC_APP_NAME: jb-campaign-processor
+    DASHBOARD_SVC_URL: campaigns.tacobell:9093
+    USER_FEATURES_SVC_URL: userfeaturesinternal.tacobell:80
+    KAFKA_URL: "kafka-broker-1.punchh.internal:9092,kafka-broker-2.punchh.internal:9092,kafka-broker-3.punchh.internal:9092"
+
+  resources:
+    limits:
+      cpu: 256m
+      memory: 256Mi
+    requests:
+      cpu: 128m
+      memory: 128Mi
+
+jbemailprocessor:
+  name: jbemailprocessor
+  pdbMaxUnAvailable: 20%
+  replicaCount: 3
+  maxSurge: 80%
+  maxUnavailable: 20%
+
+  env:
+    CACHE_TIMEOUT: 60s
+    CONSUMER_TYPE: EMAIL
+    GO_ENV: production
+    KAFKA_GROUP: JB
+    KAFKA_TOPIC: sendgrid-events-webhook
+    NEW_RELIC_APP_NAME: jb-email-processor
+    DASHBOARD_SVC_URL: campaigns.tacobell:9093
+    USER_FEATURES_SVC_URL: userfeaturesinternal.tacobell:80
+    KAFKA_URL: "kafka-broker-1.punchh.internal:9092,kafka-broker-2.punchh.internal:9092,kafka-broker-3.punchh.internal:9092"
+
+  resources:
+    limits:
+      cpu: 2048m
+      memory: 2048Mi
+    requests:
+      cpu: 2048m
+      memory: 1536Mi
+
+jbemailprocessormarketing:
+  name: jbemailprocessormarketing
+  pdbMaxUnAvailable: 20%
+  replicaCount: 3
+  maxSurge: 80%
+  maxUnavailable: 20%
+
+  env:
+    CACHE_TIMEOUT: 60s
+    CONSUMER_TYPE: EMAIL
+    GO_ENV: production
+    KAFKA_GROUP: JB
+    KAFKA_TOPIC: sendgrid-events-marketing
+    NEW_RELIC_APP_NAME: jb-email-processor-marketing
+    DASHBOARD_SVC_URL: campaigns.tacobell:9093
+    USER_FEATURES_SVC_URL: userfeaturesinternal.tacobell:80
+    KAFKA_URL: "kafka-broker-1.punchh.internal:9092,kafka-broker-2.punchh.internal:9092,kafka-broker-3.punchh.internal:9092"
+
+  resources:
+    limits:
+      cpu: 2048m
+      memory: 2048Mi
+    requests:
+      cpu: 2048m
+      memory: 1536Mi
+
+jbemailprocessortransactional:
+  name: jbemailprocessortransactional
+  pdbMaxUnAvailable: 20%
+  replicaCount: 3
+  maxSurge: 80%
+  maxUnavailable: 20%
+
+  env:
+    CACHE_TIMEOUT: 60s
+    CONSUMER_TYPE: EMAIL
+    GO_ENV: production
+    KAFKA_GROUP: JB
+    KAFKA_TOPIC: sendgrid-events-transactional
+    NEW_RELIC_APP_NAME: jb-email-processor-transactional
+    DASHBOARD_SVC_URL: campaigns.tacobell:9093
+    USER_FEATURES_SVC_URL: userfeaturesinternal.tacobell:80
+    KAFKA_URL: "kafka-broker-1.punchh.internal:9092,kafka-broker-2.punchh.internal:9092,kafka-broker-3.punchh.internal:9092"
+
+  resources:
+    limits:
+      cpu: 2048m
+      memory: 2048Mi
+    requests:
+      cpu: 2048m
+      memory: 1536Mi
+
+gokafkaemailsubreactor:
+  name: gokafkaemailsubreactor
+  pdbMaxUnAvailable: 20%
+  replicaCount: 3
+  maxSurge: 80%
+  maxUnavailable: 20%
+
+  env:
+    CACHE_TIMEOUT: 60s
+    CONSUMER_TYPE: emailsub
+    GO_ENV: production
+    KAFKA_GROUP: emailsub
+    KAFKA_TOPIC: sendgrid-events-marketing
+    SCHEMA_REGISTRY_URL: http://kafka-schema-registry.punchh.internal
+    TRANSIENT_RETRY_INTERVAL: 60s
+    TRANSIENT_RETRY_ATTEMPTS: 3
+    WEBHOOK_SVC_URL: https://hooks.punchhtacobell.com/incoming_webhooks/sendgrid
+    NEW_RELIC_APP_NAME: go-kafka-emailsub-reactor
+    DASHBOARD_SVC_URL: campaigns.tacobell:9093
+    KAFKA_URL: "kafka-broker-1.punchh.internal:9092,kafka-broker-2.punchh.internal:9092,kafka-broker-3.punchh.internal:9092"
+
+  resources:
+    limits:
+      cpu: 2048m
+      memory: 2048Mi
+    requests:
+      cpu: 2048m
+      memory: 1536Mi
+
+jbsignupprocessor:
+  name: jbsignupprocessor
+  pdbMaxUnAvailable: 20%
+  replicaCount: 3
+  maxSurge: 80%
+  maxUnavailable: 20%
+
+  env:
+    CACHE_TIMEOUT: 60s
+    CONSUMER_TYPE: SIGNUP
+    GO_ENV: production
+    KAFKA_GROUP: JB
+    KAFKA_TOPIC: tacobell.punchh_server.users
+    NEW_RELIC_APP_NAME: jb-signup-processor
+    DASHBOARD_SVC_URL: campaigns.tacobell:9093
+    USER_FEATURES_SVC_URL: userfeaturesinternal.tacobell:80
+    KAFKA_URL: "kafka-broker-1.punchh.internal:9092,kafka-broker-2.punchh.internal:9092,kafka-broker-3.punchh.internal:9092"
+
+  resources:
+    limits:
+      cpu: 256m
+      memory: 256Mi
+    requests:
+      cpu: 128m
+      memory: 128Mi
+
+jbpurchaseprocessor:
+  name: jbpurchaseprocessor
+  pdbMaxUnAvailable: 20%
+  replicaCount: 3
+  maxSurge: 80%
+  maxUnavailable: 20%
+
+  env:
+    CACHE_TIMEOUT: 60s
+    CONSUMER_TYPE: PURCHASE
+    GO_ENV: production
+    KAFKA_GROUP: JB
+    KAFKA_TOPIC: tacobell.punchh_server.checkins
+    NEW_RELIC_APP_NAME: jb-purchase-processor
+    DASHBOARD_SVC_URL: campaigns.tacobell:9093
+    USER_FEATURES_SVC_URL: userfeaturesinternal.tacobell:80
+    KAFKA_URL: "kafka-broker-1.punchh.internal:9092,kafka-broker-2.punchh.internal:9092,kafka-broker-3.punchh.internal:9092"
+
+  resources:
+    limits:
+      cpu: 256m
+      memory: 256Mi
+    requests:
+      cpu: 128m
+      memory: 128Mi
+
+jbcouponsprocessor:
+  name: jbcouponsprocessor
+  pdbMaxUnAvailable: 20%
+  replicaCount: 3
+  maxSurge: 80%
+  maxUnavailable: 20%
+
+  env:
+    CACHE_TIMEOUT: 60s
+    CONSUMER_TYPE: COUPONS
+    GO_ENV: production
+    KAFKA_GROUP: JB
+    KAFKA_TOPIC: tacobell.punchh_server.user_coupon_redemptions
+    NEW_RELIC_APP_NAME: jb-coupons-processor
+    DASHBOARD_SVC_URL: campaigns.tacobell:9093
+    USER_FEATURES_SVC_URL: userfeaturesinternal.tacobell:80
+    KAFKA_URL: "kafka-broker-1.punchh.internal:9092,kafka-broker-2.punchh.internal:9092,kafka-broker-3.punchh.internal:9092"
+
+  resources:
+    limits:
+      cpu: 2048m
+      memory: 2048Mi
+    requests:
+      cpu: 2048m
+      memory: 1536Mi
+
+jbschemamigration:
+  name: jbschemamigration
+  pdbMaxUnAvailable: 20%
+  replicaCount: 1
+  maxSurge: 80%
+  maxUnavailable: 20%
+
+  env:
+    CASSANDRA_URL: cassandra.punchh.internal
+    SNOWFLAKE_DB: DATA_ENGINEERING_PRODUCTION
+    GO_ENV: production
+    SNOWFLAKE_SCHEMA: tacobell
+    CASSANDRA_KEYSPACE: jb
+
+  resources:
+    limits:
+      cpu: 256m
+      memory: 256Mi
+    requests:
+      cpu: 128m
+      memory: 128Mi
+
+campaignshowpage:
+  initcontainer:
+    env:
+      global_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:tacobell/campaign-show-page-qv15Ii"
+      tenant_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:tacobell/campaign-show-page-qv15Ii"
+      service_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:tacobell/campaign-show-page-qv15Ii"
+      db_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:tacobell/db-secrets-L5Umgt"
+
+  name: campaignshowpage
+  pdbMaxUnAvailable: 20%
+  replicaCount: 2
+  maxSurge: 80%
+  maxUnavailable: 20%
+  serviceaccount: secrets-manager
+  pdb: true
+  kindofcomponent: api
+  healthCheckPath: /healthz
+  containerPort: 8080
+  args: ["source /tmp/secret && ./server"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+  
+  env:
+    AWS_REGION: us-east-1
+    ENVIRONMENT: production
+    CREDENTIAL_PROVIDER: secret_manager
+    
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1000Mi
+    requests:
+      cpu: 250m
+      memory: 500Mi
+
+eventframeworkserver:
+  initcontainer:
+    env:
+      global_secrets_arn:  arn:aws:secretsmanager:us-east-1:060724984176:secret:tacobell/eventframework-FuAosm
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:060724984176:secret:tacobell/eventframework-FuAosm
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:060724984176:secret:tacobell/eventframework-FuAosm
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:060724984176:secret:tacobell/db-secrets-L5Umgt
+
+  name: eventframeworkserver
+  pdbMaxUnAvailable: 20%
+  replicaCount: 2
+  maxSurge: 80%
+  maxUnavailable: 20%
+  serviceaccount: secrets-manager
+  pdb: True
+  kindofcomponent: api
+  healthCheckPath: /ping
+  containerPort: 3000
+  command: ["/bin/sh", "-c"]
+  args: ["source /tmp/secret && ./main"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    INSTANCE: production
+    INSTANCE_TYPE: server
+    PORT: 3000
+    CREDENTIAL_PROVIDER: secret_manager
+    TENANCY_NAME: tacobell
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 2048m
+      memory: 2048Mi
+    requests:
+      cpu: 1024m
+      memory: 1024Mi
+
+eventframeworkworker:
+  initcontainer:
+    env:
+      global_secrets_arn:  arn:aws:secretsmanager:us-east-1:060724984176:secret:tacobell/eventframework-FuAosm
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:060724984176:secret:tacobell/eventframework-FuAosm
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:060724984176:secret:tacobell/eventframework-FuAosm
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:060724984176:secret:tacobell/db-secrets-L5Umgt
+
+  name: eventframeworkworker
+  pdbMaxUnAvailable: 20%
+  replicaCount: 3
+  maxSurge: 80%
+  maxUnavailable: 20%
+  serviceaccount: secrets-manager
+  pdb: True
+  kindofcomponent: worker
+  healthCheckPath: /ping
+  containerPort: 3000
+  command: ["/bin/sh", "-c"]
+  args: ["source /tmp/secret && ./main"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: worker
+
+  env:
+    INSTANCE: production
+    INSTANCE_TYPE: worker
+    KAFKA_TOPICS: tacobell.punchh_server.users,tacobell.punchh_server.checkins,tacobell.punchh_server.checkins.gift,tacobell.punchh_server.redemptions,tacobell.punchh_server.transactional_notifications,tacobell.punchh_server.rewards,tacobell.punchh_server.marketing_notifications,tacobell.punchh_server.redeemables,tacobell.punchh_server.user_subscriptions
+    PORT: 3000
+    CREDENTIAL_PROVIDER: secret_manager
+    TENANCY_NAME: tacobell
+
+  healthcheck:
+    enabled: false
+  service:
+    enabled: false
+    restapi: true
+  resources:
+    limits:
+      cpu: 2048m
+      memory: 2048Mi
+    requests:
+      cpu: 1024m
+      memory: 1024Mi
+
+aegaeonoutbound:
+  initcontainer:
+    env:
+      global_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:tacobell/aegaeon-outbound-s4noft"
+      tenant_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:tacobell/aegaeon-outbound-s4noft"
+      service_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:tacobell/aegaeon-outbound-s4noft"
+      db_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:tacobell/db-secrets-L5Umgt"
+
+  name: aegaeonoutbound
+  pdbMaxUnAvailable: 20%
+  replicaCount: 2
+  maxSurge: 80%
+  maxUnavailable: 20%
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: /ping
+  containerPort: 3000
+  args: ["source /tmp/secret && ./main"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    INSTANCE: production
+    INSTANCE_TYPE: server
+    PORT: 3000
+    CREDENTIAL_PROVIDER: secret_manager
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 2048m
+      memory: 2048Mi
+    requests:
+      cpu: 1024m
+      memory: 1024Mi
+
+aegaeonemail:
+  initcontainer:
+    env:
+      global_secrets_arn:  "arn:aws:secretsmanager:us-east-1:060724984176:secret:tacobell/aegaeon-email-dDyCph"
+      tenant_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:tacobell/aegaeon-email-dDyCph"
+      service_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:tacobell/aegaeon-email-dDyCph"
+      db_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:tacobell/db-secrets-L5Umgt"
+
+  name: aegaeonemail
+  pdbMaxUnAvailable: 20%
+  replicaCount: 2
+  maxSurge: 80%
+  maxUnavailable: 20%
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: /ping
+  containerPort: 3000
+  args: ["source /tmp/secret && ./main"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    INSTANCE: production
+    INSTANCE_TYPE: server
+    PORT: 3000
+    CREDENTIAL_PROVIDER: secret_manager
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 2048m
+      memory: 2048Mi
+    requests:
+      cpu: 1024m
+      memory: 1024Mi
+
+
+images:
+  campaigns: punchh/shippable
+  jbapi: punchh/jb-api
+  jbapigateway: punchh/jb-api-gateway
+  messaging: punchh/shippable-messaging-service
+  jbinternalapi: punchh/jb-api
+  jbmessagingrest: punchh/shippable-messaging-service
+  jbdashboardrest: punchh/shippable
+  userfeaturesinternal: punchh/common_user_features
+  jbredemptionsprocessor: punchh/jb-event-processor
+  jbworkerpool: punchh/jb-workerpool-service
+  jbcampaignprocessor: punchh/jb-event-processor
+  jbemailprocessor: punchh/jb-event-processor
+  jbsignupprocessor: punchh/jb-event-processor
+  jbpurchaseprocessor: punchh/jb-event-processor
+  jbcouponsprocessor: punchh/jb-event-processor
+  campaignshowpage: punchh/csp-foundation
+  jbschemamigration: punchh/jb-datastore-schema
+  jbemailprocessormarketing: punchh/jb-event-processor
+  jbemailprocessortransactional: punchh/jb-event-processor
+  gokafkaemailsubreactor: punchh/go-kafka-reactor
+  eventframeworkserver: punchh/eventwebhook
+  eventframeworkworker: punchh/eventwebhook
+  aegaeonemail: punchh/aegaeon-email-service
+  aegaeonoutbound: punchh/aegaeon-outbound-server

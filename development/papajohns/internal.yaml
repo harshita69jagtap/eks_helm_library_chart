@@ -1,0 +1,54 @@
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/group.name: papajohns-internal
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:556735883279:certificate/d5571864-bd8e-4041-ac5e-79810fad75c0
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/scheme: internal
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/tags: Environment=Production,Team=DevOps
+  name: cadence-web
+  namespace: papajohns
+spec:
+  rules:
+  - host: cadence-web.punchhpapajohns.com
+    http:
+      paths:
+      - backend:
+          serviceName: cadence-web
+          servicePort: 80
+
+--- 
+
+# apiVersion: networking.k8s.io/v1beta1
+# kind: Ingress
+# metadata:
+#   annotations:
+#     kubernetes.io/ingress.class: alb
+#     alb.ingress.kubernetes.io/group.name: papajohns-internal
+#     alb.ingress.kubernetes.io/healthcheck-path: /ping
+#     alb.ingress.kubernetes.io/backend-protocol: HTTP
+#     alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:556735883279:certificate/d5571864-bd8e-4041-ac5e-79810fad75c0
+#     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+#     alb.ingress.kubernetes.io/scheme: internal
+#     alb.ingress.kubernetes.io/target-type: ip
+#     alb.ingress.kubernetes.io/tags: Environment=Production,Team=DevOps
+#   name: punchh.internal
+#   namespace: papajohns
+# spec:
+#   rules:
+#   - host: dashboard-rest.punchh.internal
+#     http:
+#       paths:
+#       - backend:
+#           serviceName: jbdashboardrest
+#           servicePort: 80
+#   - host: messaging-rest.punchh.internal
+#     http:
+#       paths:
+#       - backend:
+#           serviceName: jbmessagingrest
+#           servicePort: 80

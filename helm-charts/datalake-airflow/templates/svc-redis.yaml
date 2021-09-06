@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: datalake-airflow-redis-svc
+  labels:
+    app: datalake-airflow-redis-svc
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.global.common.service.port }}
+      targetPort: {{ .Values.datalake.redis.port }}
+      protocol: TCP
+      name: redis
+  selector:
+    app: datalake-airflow-redis

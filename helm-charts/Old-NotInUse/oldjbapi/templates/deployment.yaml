@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jbapi
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/version: {{ .Chart.Version }}
+    app.kubernetes.io/part-of: api
+spec:
+  replicas: {{ .Values.jbapi.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: {{ .Values.jbapi.maxSurge }}
+      maxUnavailable: {{ .Values.jbapi.maxUnavailable }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Chart.Name }}
+      app.kubernetes.io/version: {{ .Chart.Version }}
+      app.kubernetes.io/part-of: api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Chart.Name }}
+        app.kubernetes.io/version: {{ .Chart.Version }}
+        app.kubernetes.io/part-of: api
+    spec:
+      imagePullSecrets:
+        - name: {{ .Values.global.common.imagePullSecrets }}
+    {{- if .Values.global.common.serviceAccount.create }}
+      serviceAccountName: jbapi
+    {{- end }}
+      securityContext:
+        {{- toYaml .Values.global.common.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Values.jbapi.name }}
+          securityContext:
+            {{- toYaml .Values.global.common.securityContext | nindent 12 }}
+          image: {{ .Values.images.jbapi }}:{{ .Values.tags.jbapi }}
+          imagePullPolicy: {{ .Values.global.common.pullPolicy }}
+          ports:
+            - name: app
+              containerPort: 50051
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.jbapi.resources | nindent 12 }}
+          env:
+{{- range $key, $value := .Values.global.common.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+{{- end }}
+{{- range $key, $value := .Values.jbapi.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+{{- end }}
+            - name: VAULT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: vault
+                  key: VAULT_TOKEN
+      nodeSelector:
+        node_group_type: web

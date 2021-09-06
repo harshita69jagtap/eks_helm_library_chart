@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: xp-stats-utils
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/version: {{ .Chart.Version }}
+    app.kubernetes.io/part-of: api
+spec:
+  replicas: {{ .Values.xpstatsutils.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: {{ .Values.xpstatsutils.maxSurge }}
+      maxUnavailable: {{ .Values.xpstatsutils.maxUnavailable }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Chart.Name }}
+      app.kubernetes.io/version: {{ .Chart.Version }}
+      app.kubernetes.io/part-of: api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Chart.Name }}
+        app.kubernetes.io/version: {{ .Chart.Version }}
+        app.kubernetes.io/part-of: api
+    spec:
+      imagePullSecrets:
+        - name: {{ .Values.global.common.imagePullSecrets }}
+    {{- if .Values.global.common.serviceAccount.create }}
+      serviceAccountName: xpstatsutils
+    {{- end }}
+      securityContext:
+        {{- toYaml .Values.global.common.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Values.xpstatsutils.name }}
+          securityContext:
+            {{- toYaml .Values.global.common.securityContext | nindent 12 }}
+          image: {{ .Values.images.xpstatsutils }}:{{ .Values.tags.xpstatsutils}}
+          imagePullPolicy: {{ .Values.global.common.pullPolicy }}
+          ports:
+            - name: app
+              containerPort: 5000
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: 5000
+              scheme: HTTP
+            initialDelaySeconds: {{ .Values.global.common.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.global.common.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.global.common.readinessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.global.common.readinessProbe.successThreshold }}
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: 5000
+              scheme: HTTP
+            initialDelaySeconds: {{ .Values.global.common.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.global.common.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.global.common.livenessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.global.common.livenessProbe.successThreshold }}
+          resources:
+            {{- toYaml .Values.xpstatsutils.resources | nindent 12 }}
+          env:
+{{- range $key, $value := .Values.global.common.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+{{- end }}
+{{- range $key, $value := .Values.xpstatsutils.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+{{- end }}
+            

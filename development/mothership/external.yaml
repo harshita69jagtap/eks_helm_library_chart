@@ -1,0 +1,18 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: internal-ingress
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+  labels:
+    app.kubernetes.io/managed-by: Helm
+  name: cadence-web
+  namespace: jb
+spec:
+  rules:
+  - host: cadence-web.punchh.com
+    http:
+      paths:
+      - backend:
+          serviceName: cadence-web
+          servicePort: 80

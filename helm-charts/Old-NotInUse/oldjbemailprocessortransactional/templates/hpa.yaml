@@ -1,0 +1,18 @@
+{{- if .Values.jbemailprocessortransactional.hpa.enabled }}
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpa-jbemailprocessortransactional
+spec:
+  scaleTargetRef:
+    apiVersion: extensions/v1beta1
+    kind: Deployment
+    name: jbemailprocessortransactional
+  minReplicas: 1
+  maxReplicas: {{ .Values.jbemailprocessortransactional.hpa.maxReplicas }}
+  metrics:
+  - type: Resource
+    resource:
+      name: {{ .Values.jbemailprocessortransactional.hpa.type }}
+      targetAverageUtilization: {{ .Values.global.common.hpa.targetAverageUtilization }}
+{{ end }}

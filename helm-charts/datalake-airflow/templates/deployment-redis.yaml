@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: datalake-airflow-redis
+  labels:
+    app: datalake-airflow-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: datalake-airflow-redis
+  template:
+    metadata:
+      labels:
+        app: datalake-airflow-redis
+    spec:
+      containers:
+        - name: {{ .Values.datalake.redis.name }}
+          image: {{ .Values.datalake.redis.image }}
+          imagePullPolicy: {{ .Values.global.common.pullPolicy }}
+          ports:
+            - name: {{ .Values.datalake.redis.name }}
+              containerPort: {{ .Values.datalake.redis.port }}
+              protocol: TCP
+          resources:
+            requests:
+              cpu: {{ .Values.datalake.redis.resources.requests.cpu }}
+              memory: {{ .Values.datalake.redis.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.datalake.redis.resources.limits.cpu }}
+              memory: {{ .Values.datalake.redis.resources.limits.memory }}
+          command: ["redis-server"]
+          args: ["/usr/local/etc/redis/redis.conf"]
+          volumeMounts:
+            - mountPath: /usr/local/etc/redis
+              name: config
+      volumes:
+        - name: config
+          configMap:
+            name: datalake-airflow-redis-config
+            items:
+              - key: redis.conf
+                path: redis.conf

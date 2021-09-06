@@ -1,0 +1,331 @@
+global:
+  common:
+    imagePullSecrets: regcred
+    pullPolicy: IfNotPresent
+
+    service:
+      type: ClusterIP
+      port: 80
+
+    serviceAccount:
+      create: false
+    env:
+      TENANT: mothership
+      TENANT_NAME: mothership
+      VAULT_HOST: https://vault.punchh.com
+      BUILD_NUMBER: "1"
+
+    livenessProbe:
+      initialDelaySeconds: 90
+      periodSeconds: 30
+      successThreshold: 1
+      timeoutSeconds: 5
+    readinessProbe:
+      initialDelaySeconds: 45
+      periodSeconds: 15
+      successThreshold: 1
+      timeoutSeconds: 5
+
+    podSecurityContext: {}
+    securityContext: {}
+
+
+aegaeonoutbound:
+  initcontainer:
+    env:
+      global_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:mothership/aegaeon-outbound-1BRnrn"
+      tenant_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:mothership/aegaeon-outbound-1BRnrn"
+      service_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:mothership/aegaeon-outbound-1BRnrn"
+      db_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:mothership/db-secrets-wTTN7K"
+
+  name: aegaeonoutbound
+  pdbMaxUnAvailable: 20%
+  replicaCount: 2
+  maxSurge: 80%
+  maxUnavailable: 20%
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: /ping
+  containerPort: 3000
+  args: ["source /tmp/secret && ./main"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    INSTANCE: production
+    INSTANCE_TYPE: server
+    PORT: 3000
+    CREDENTIAL_PROVIDER: secret_manager
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 2048m
+      memory: 2048Mi
+    requests:
+      cpu: 1024m
+      memory: 1024Mi
+
+kafkaconnect:
+  name: kafkaconnect
+  pdbMaxUnAvailable: 20%
+  replicaCount: 2
+  maxSurge: 80%
+  maxUnavailable: 20%
+
+  env:
+    CONNECT_BOOTSTRAP_SERVERS: "kafka-broker-1.punchh.internal:9092,kafka-broker-2.punchh.internal:9092,kafka-broker-3.punchh.internal:9092"
+    CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 2
+    S3_BUCKET_SENDGRID_SINK: "sendgrid-kafka-production-stream"
+    CONNECT_CONFIG_STORAGE_TOPIC: 3000
+    CONNECT_GROUP_ID: kafka-connect
+    CONNECT_INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+    CONNECT_INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+    CONNECT_KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
+    CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: http://kafka-schema-registry.punchh.internal
+    CONNECT_LOG4J_LOGGERS: org.apache.kafka.connect.runtime.rest=WARN,org.reflections=ERROR
+    CONNECT_LOG4J_ROOT_LOGLEVEL: INFO
+    CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 2
+    CONNECT_OFFSET_STORAGE_TOPIC: _kafka-connect-offsets
+    CONNECT_PLUGIN_PATH: "/usr/share/java,/usr/share/confluent-hub-components/,/connectors/"
+    CONNECT_REST_PORT: "8083"
+    CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 2
+    CONNECT_STATUS_STORAGE_TOPIC: _kafka-connect-status
+    CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
+    CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://kafka-schema-registry.punchh.internal
+    KAFKA_HEAP_OPTS: "-Xmx8G -Xms8G -XshowSettings:vm"
+    S3_REGION_SENDGRID_SINK: "us-east-1"
+    S3_BUCKET_SENDGRID_FLUSH_SIZE: "25000"
+    KAFKA_TOPIC_SENDGRID_SINK: "sendgrid-events"
+
+  resources:
+    limits:
+      cpu: 2048m
+      memory: 5120Mi
+    requests:
+      cpu: 1024m
+      memory: 4096Mi
+
+campaignshowpage:
+  initcontainer:
+    env:
+      global_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:mothership/campaign-show-page-xT4TcO"
+      tenant_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:mothership/campaign-show-page-xT4TcO"
+      service_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:mothership/campaign-show-page-xT4TcO"
+      db_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:mothership/db-secrets-wTTN7K"
+
+  name: campaignshowpage
+  pdbMaxUnAvailable: 20%
+  replicaCount: 2
+  maxSurge: 80%
+  maxUnavailable: 20%
+  serviceaccount: secrets-manager
+  pdb: true
+  kindofcomponent: api
+  healthCheckPath: /healthz
+  containerPort: 8080
+  args: ["source /tmp/secret && ./server"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    AWS_REGION: us-east-1
+    ENVIRONMENT: production
+    CREDENTIAL_PROVIDER: secret_manager
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1000Mi
+    requests:
+      cpu: 250m
+      memory: 500Mi
+
+aegaeongiftcard:
+  initcontainer:
+    env:
+      global_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:mothership/aegaeon-giftcard-gTJPQD"
+      tenant_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:mothership/aegaeon-giftcard-gTJPQD"
+      service_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:mothership/aegaeon-giftcard-gTJPQD"
+      db_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:mothership/db-secrets-wTTN7K"
+
+  name: aegaeongiftcard
+  pdbMaxUnAvailable: 20%
+  replicaCount: 2
+  maxSurge: 80%
+  maxUnavailable: 20%
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: /ping
+  containerPort: 3000
+  args: ["source /tmp/secret && ./main"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    INSTANCE: production
+    INSTANCE_TYPE: server
+    PORT: 3000
+    CREDENTIAL_PROVIDER: secret_manager
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 2048m
+      memory: 2048Mi
+    requests:
+      cpu: 1024m
+      memory: 1024Mi
+
+aegaeonpayments:
+  initcontainer:
+    env:
+      global_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:mothership/aegaeon-payments-a48yiW"
+      tenant_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:mothership/aegaeon-payments-a48yiW"
+      service_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:mothership/aegaeon-payments-a48yiW"
+      db_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:mothership/db-secrets-wTTN7K"
+
+  name: aegaeonpayments
+  pdbMaxUnAvailable: 20%
+  replicaCount: 2
+  maxSurge: 80%
+  maxUnavailable: 20%
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: /ping
+  containerPort: 3000
+  args: ["source /tmp/secret && ./main"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    INSTANCE: production
+    INSTANCE_TYPE: server
+    PORT: 3000
+    CREDENTIAL_PROVIDER: secret_manager
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 2048m
+      memory: 2048Mi
+    requests:
+      cpu: 1024m
+      memory: 1024Mi
+
+aegaeonemail:
+  initcontainer:
+    env:
+      global_secrets_arn:  arn:aws:secretsmanager:us-east-1:060724984176:secret:mothership/aegaeon-email-5Icum5
+      tenant_secrets_arn: arn:aws:secretsmanager:us-east-1:060724984176:secret:mothership/aegaeon-email-5Icum5
+      service_secrets_arn: arn:aws:secretsmanager:us-east-1:060724984176:secret:mothership/aegaeon-email-5Icum5
+      db_secrets_arn: arn:aws:secretsmanager:us-east-1:060724984176:secret:mothership/db-secrets-wTTN7K
+
+  name: aegaeonemail
+  pdbMaxUnAvailable: 20%
+  replicaCount: 2
+  maxSurge: 80%
+  maxUnavailable: 20%
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: /ping
+  containerPort: 3000
+  args: ["source /tmp/secret && ./main"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    INSTANCE: production
+    INSTANCE_TYPE: server
+    PORT: 3000
+    CREDENTIAL_PROVIDER: secret_manager
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 2048m
+      memory: 2048Mi
+    requests:
+      cpu: 1024m
+      memory: 1024Mi
+
+aegaeonmessaging:
+  initcontainer:
+    env:
+      global_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:mothership/aegaeon-messaging-g5MwP8"
+      tenant_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:mothership/aegaeon-messaging-g5MwP8"
+      service_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:mothership/aegaeon-messaging-g5MwP8"
+      db_secrets_arn: "arn:aws:secretsmanager:us-east-1:060724984176:secret:mothership/db-secrets-wTTN7K"
+
+  name: aegaeonmessaging
+  pdbMaxUnAvailable: 20%
+  replicaCount: 2
+  maxSurge: 80%
+  maxUnavailable: 20%
+  serviceaccount: secrets-manager
+  pdb: false
+  kindofcomponent: api
+  healthCheckPath: /ping
+  containerPort: 3000
+  args: ["source /tmp/secret && ./main"]
+  sidecar: false
+  antiaffinity: false
+  node_group_type: web
+
+  env:
+    INSTANCE: production
+    INSTANCE_TYPE: server
+    PORT: 3000
+    CREDENTIAL_PROVIDER: secret_manager
+
+  healthcheck:
+    enabled: true
+  service:
+    enabled: true
+    restapi: true
+  resources:
+    limits:
+      cpu: 2048m
+      memory: 2048Mi
+    requests:
+      cpu: 1024m
+      memory: 1024Mi
+
+images:
+  aegaeonoutbound: punchh/aegaeon-outbound-server
+  kafkaconnect: punchh/kafka-connect
+  campaignshowpage: punchh/csp-foundation
+  aegaeongiftcard: punchh/aegaeon-giftcard-server
+  aegaeonpayments: punchh/aegaeon-payment-server
+  aegaeonemail: punchh/aegaeon-email-service
+  aegaeonmessaging: punchh/aegaeon-messaging-server

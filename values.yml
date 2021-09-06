@@ -1,0 +1,5 @@
+shippable_devops_res:
+  name: shippable_devops_coderepo
+  branch: eks
+  path: punchh/shippable-devops
+  integ: intg_github_pipelines

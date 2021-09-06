@@ -1,0 +1,23 @@
+{{- if .Values.punchhcommon.service.enabled }}
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: punchhcommon
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/version: {{ .Chart.Version  }} 
+    app.kubernetes.io/part-of: {{ .Values.punchhcommon.kindofcomponent }}
+spec:
+  type: {{ .Values.global.common.service.type }}
+  ports:
+    - port: 80
+      targetPort: {{ .Values.punchhcommon.containerPort}}
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/version: {{ .Chart.Version  }} 
+    app.kubernetes.io/part-of: {{ .Values.punchhcommon.kindofcomponent }}
+
+{{ end }}

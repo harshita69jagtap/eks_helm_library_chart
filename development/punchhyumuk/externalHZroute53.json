@@ -1,0 +1,43 @@
+{
+  "Comment": "punchhyumuk route53 record set creation for external hosted zone",
+  "Changes": [
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "cadence-web.punchhyumuk.com",
+        "Type": "A",
+        "AliasTarget": {
+          "HostedZoneId": "ZHURV8PSTC4K8",
+          "DNSName": "dualstack.internal-k8s-yumukinternal-ba684110ad-1640320595.eu-west-2.elb.amazonaws.com.",
+          "EvaluateTargetHealth": false
+        }
+      }
+    },
+
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "csp.punchhyumuk.com",
+        "Type": "A",
+        "AliasTarget": {
+          "HostedZoneId": "ZHURV8PSTC4K8",
+          "DNSName": "dualstack.k8s-yumukinternetfaci-ec8b313547-95297805.eu-west-2.elb.amazonaws.com..",
+          "EvaluateTargetHealth": false
+        }
+      }
+    },
+    
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "jb.punchhyumuk.com",
+        "Type": "A",
+        "AliasTarget": {
+          "HostedZoneId": "ZHURV8PSTC4K8",
+          "DNSName": "dualstack.k8s-yumukinternetfaci-ec8b313547-95297805.eu-west-2.elb.amazonaws.com..",
+          "EvaluateTargetHealth": false
+        }
+      }
+    }
+  ]
+}

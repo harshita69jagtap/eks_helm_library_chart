@@ -1,0 +1,122 @@
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/group.name: punchh-development-internet-facing
+    alb.ingress.kubernetes.io/healthcheck-path: /ping
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:232720106935:certificate/ba002c46-9621-4f48-8746-50132d2d98d1
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/tags: Environment=Development,Team=DevOps
+  name: external
+  namespace: qa
+spec:
+  rules:
+  - host: qa.punchh.io
+    http:
+      paths:
+      - backend:
+          serviceName: rails
+          servicePort: 80
+
+  - host: eventframework-qa.punchh.io
+    http:
+      paths:
+      - backend:
+          serviceName: eventframeworkserver
+          servicePort: 80
+
+  - host: merlingateway-qa.punchh.io
+    http:
+      paths:
+      - backend:
+          serviceName: merlingateway
+          servicePort: 80
+
+  - host: jb-qa.punchh.io
+    http:
+      paths:
+      - backend:
+          serviceName: jbapigateway
+          servicePort: 80
+
+--- 
+
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/group.name: punchh-development-internet-facing
+    alb.ingress.kubernetes.io/healthcheck-path: /api/v1/email-template/health
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:232720106935:certificate/ba002c46-9621-4f48-8746-50132d2d98d1
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/tags: Environment=Development,Team=DevOps
+  name: emailtemplate
+  namespace: qa
+spec:
+  rules:
+  - host: emailtemplate-qa.punchh.io
+    http:
+      paths:
+      - backend:
+          serviceName: emailtemplate
+          servicePort: 80
+
+---
+
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/group.name: punchh-development-internet-facing
+    alb.ingress.kubernetes.io/healthcheck-path: /healthz
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:232720106935:certificate/ba002c46-9621-4f48-8746-50132d2d98d1
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/tags: Environment=Development,Team=DevOps
+  name: campaignshowpage
+  namespace: qa
+spec:
+  rules:
+  - host: csp-qa.punchh.io
+    http:
+      paths:
+      - backend:
+          serviceName: campaignshowpage
+          servicePort: 80
+
+--- 
+
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/group.name: punchh-development-internet-facing
+    alb.ingress.kubernetes.io/healthcheck-path: /api/v1/health
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:232720106935:certificate/ba002c46-9621-4f48-8746-50132d2d98d1
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/tags: Environment=Development,Team=DevOps
+  name: sfservicecloud
+  namespace: qa
+spec:
+  rules:
+  - host: sfservicecloud-qa.punchh.io
+    http:
+      paths:
+      - backend:
+          serviceName: sfservicecloud
+          servicePort: 80

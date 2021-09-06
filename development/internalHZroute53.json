@@ -1,0 +1,30 @@
+{
+    "Comment": "tacobell route53 record set creation for internal hosted zone",
+    "Changes": [  
+      {
+        "Action": "UPSERT",
+        "ResourceRecordSet": {
+          "Name": "dashboard-rest.punchh.internal",
+          "Type": "A",
+          "AliasTarget": {
+            "HostedZoneId": "Z35SXDOTRQ7X7K",
+            "DNSName": "dualstack.internal-k8s-tacobellinternal-a909bdee81-67008247.us-east-1.elb.amazonaws.com.",
+            "EvaluateTargetHealth": false
+          }
+        }
+      },
+      
+      {
+        "Action": "UPSERT",
+        "ResourceRecordSet": {
+          "Name": "messaging-rest.punchh.internal",
+          "Type": "A",
+          "AliasTarget": {
+            "HostedZoneId": "Z35SXDOTRQ7X7K",
+            "DNSName": "dualstack.internal-k8s-tacobellinternal-a909bdee81-67008247.us-east-1.elb.amazonaws.com.",
+            "EvaluateTargetHealth": false
+          }
+        }
+      }
+    ]
+  }

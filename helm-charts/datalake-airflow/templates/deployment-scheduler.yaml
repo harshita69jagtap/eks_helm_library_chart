@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: datalake-airflow-scheduler
+  labels:
+    app: datalake-airflow-scheduler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: datalake-airflow-scheduler
+  template:
+    metadata:
+      labels:
+        app: datalake-airflow-scheduler
+    spec:
+      containers:
+        - name: {{ .Values.datalake.scheduler.name }}
+          image: {{ .Values.images.airflow }}:{{ index .Values.tags "datalake-airflow" }}
+          args: [ {{ .Values.datalake.scheduler.args | quote }} ]
+          imagePullPolicy: {{ .Values.global.common.pullPolicy }}
+          resources:
+            {{- toYaml .Values.datalake.scheduler.resources | nindent 12 }}
+          env:
+{{- range $key, $value := .Values.global.common.env }}
+          - name: {{ $key }}
+            value: {{ $value | quote }}
+{{- end }}
+{{- range $key, $value := .Values.datalake.scheduler.env }}
+          - name: {{ $key }}
+            value: {{ $value | quote }}
+{{- end }}
+          - name: AIRFLOW__CORE__SQL_ALCHEMY_CONN
+            value: {{ .Values.global.common.env.db_con1 }}://{{ .Values.global.common.env.DB_USER }}:{{ .Values.global.common.env.DB_PASSWORD }}@{{ .Values.global.common.env.DB_HOST }}:5432/{{ .Values.global.common.env.DB_NAME_AIRFLOW }}
+          - name: AIRFLOW__CELERY__RESULT_BACKEND
+            value: {{ .Values.global.common.env.db_con2 }}://{{ .Values.global.common.env.DB_USER }}:{{ .Values.global.common.env.DB_PASSWORD }}@{{ .Values.global.common.env.DB_HOST }}:5432/{{ .Values.global.common.env.DB_NAME_AIRFLOW }}
+          - name: REDIS_HOST
+            value: datalake-airflow-redis-svc.{{ .Release.Namespace }}
+          volumeMounts:
+          - mountPath: /usr/local/airflow/dags
+            name: efs-share
+      volumes:
+      - name: efs-share
+        persistentVolumeClaim:
+          claimName: efs-claim
